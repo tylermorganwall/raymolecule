@@ -1,0 +1,11 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^README\.Rmd$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
+^.*\.Rdx$
+^.*\.Rdb$
+^.*\.Rdata$
+README_cache
