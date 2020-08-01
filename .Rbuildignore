@@ -8,4 +8,9 @@
 ^.*\.Rdx$
 ^.*\.Rdb$
 ^.*\.Rdata$
-README_cache
+^README\.Rmd$
+^\.RDataTmp$
+^README\.md$
+^README_cache$
+^README_files$
+^man/figures$
