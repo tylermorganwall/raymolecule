@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="pkgdown.css" rel="stylesheet">
 <script src="pkgdown.js"></script><meta property="og:title" content="Parse and Render Molecular Structures in 3D">
-<meta property="og:description" content="Parses SDF (Structural Description Format) and PDB (Protein Database) files to a rayrender scene description for 3D rendering.">
+<meta property="og:description" content="Parses SDF (Structural Description Format) and PDB (Protein Database) files to a rayrender scene for 3D rendering.">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -31,18 +31,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">raymolecule</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2.0</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="reference/index.html">Reference</a>
 </li>
@@ -53,14 +47,14 @@
 <ul class="nav navbar-nav navbar-right">
 <li>
   <a href="reference/index.html">
-    <span class="fa fa-file-code-o"></span>
+    <span class="fas fa-file-code-o"></span>
      
     functions
   </a>
 </li>
 <li>
   <a href="https://github.com/tylermorganwall/raymolecule">
-    <span class="fa fa-github fa-lg"></span>
+    <span class="fas fa-github fa-lg"></span>
      
     GitHub
   </a>
@@ -88,18 +82,20 @@
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
 <p>You can install the released version of raymolecule from Github:</p>
-<div class="sourceCode" id="cb1"><pre class="r"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"remotes"</span>)
-<span class="kw pkg">remotes</span><span class="kw ns">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html">install_github</a></span>(<span class="st">"tylermorganwall/raymolecule"</span>)</pre></div>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span>
+<span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html">install_github</a></span><span class="op">(</span><span class="st">"tylermorganwall/raymolecule"</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="examples" class="section level2">
 <h2 class="hasAnchor">
 <a href="#examples" class="anchor"></a>Examples</h2>
 <p><code>raymolecule</code> includes several example SDF files for the following molecules: “benzene”, “buckyball”, “caffeine”, “capsaicin”, “cinnemaldehyde”, “geraniol”, “luciferin”, “morphine”, “penicillin”, “pfoa”, “skatole”, “tubocurarine_chloride”. You can get the file path to these example files using the <code><a href="reference/get_example_molecule.html">get_example_molecule()</a></code> function. We pass this path to the <code><a href="reference/read_sdf.html">read_sdf()</a></code> file to parse the file and extract the atom coordinates and bond information in a list. The magrittr pipe is automatically imported in the package, so we will use it to pass the output of each function to the input of the next.</p>
 <p>Here’s the format of the data:</p>
-<div class="sourceCode" id="cb2"><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">raymolecule</span>)
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">raymolecule</span><span class="op">)</span>
 
-<span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span>(<span class="st">"benzene"</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span>()
+<span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"benzene"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span>
 <span class="co">#&gt; $atoms</span>
 <span class="co">#&gt;          x       y      z type index</span>
 <span class="co">#&gt; 1  -1.2131 -0.6884  0e+00    C     1</span>
@@ -128,51 +124,56 @@
 <span class="co">#&gt; 9     4 10      1  0  0  0  0</span>
 <span class="co">#&gt; 10    5  6      1  0  0  0  0</span>
 <span class="co">#&gt; 11    5 11      1  0  0  0  0</span>
-<span class="co">#&gt; 12    6 12      1  0  0  0  0</span></pre></div>
-<p>We can then pass this list to the <code><a href="reference/generate_full_scene.html">generate_full_scene()</a></code>, <code><a href="reference/generate_atom_scene.html">generate_atom_scene()</a></code>, or <code><a href="reference/generate_bond_scene.html">generate_bond_scene()</a></code> functions to convert this representation to a rayrender scene. This can then be passed on the <code><a href="reference/render_model.html">render_model()</a></code> function, which will call rayrender’s <code><a href="https://rdrr.io/pkg/rayrender/man/render_scene.html">render_scene()</a></code> function to render it. This function automatically ensures the molecule is centered and in frame, and sets up lighting, and can accept arguments to rotate the molecule. For more rendering options, see <code><a href="https://rdrr.io/pkg/rayrender/man/render_scene.html">rayrender::render_scene()</a></code>.</p>
-<div class="sourceCode" id="cb3"><pre class="r">
+<span class="co">#&gt; 12    6 12      1  0  0  0  0</span></code></pre></div>
+<p>We can then pass this list to the <code><a href="reference/generate_full_scene.html">generate_full_scene()</a></code>, <code><a href="reference/generate_atom_scene.html">generate_atom_scene()</a></code>, or <code><a href="reference/generate_bond_scene.html">generate_bond_scene()</a></code> functions to convert this representation to a rayrender scene. This can then be passed on the <code><a href="reference/render_model.html">render_model()</a></code> function, which will call rayrender’s <code><a href="https://www.rayrender.net/reference/render_scene.html">render_scene()</a></code> function to render it. This function automatically ensures the molecule is centered and in frame, and sets up lighting, and can accept arguments to rotate the molecule. For more rendering options, see <code><a href="https://www.rayrender.net/reference/render_scene.html">rayrender::render_scene()</a></code>.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
 <span class="co">#Specify a width, height, and number of samples for the image (more samples == less noise)</span>
-<span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span>(<span class="st">"caffeine"</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span>() <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span>() <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/render_model.html">render_model</a></span>(<span class="kw">width</span><span class="kw">=</span><span class="fl">800</span>,<span class="kw">height</span><span class="kw">=</span><span class="fl">800</span>,<span class="kw">samples</span><span class="kw">=</span><span class="fl">1000</span>, <span class="kw">clamp_value</span><span class="kw">=</span><span class="fl">10</span>)</pre></div>
+<span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>, clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-4-1.png" width="100%"></p>
-<div class="sourceCode" id="cb4"><pre class="r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
 <span class="co">#Light from both bottom and top</span>
-<span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span>(<span class="st">"cinnemaldehyde"</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span>() <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span>() <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/render_model.html">render_model</a></span>(<span class="kw">lights</span><span class="kw">=</span><span class="st">"both"</span>,<span class="kw">width</span><span class="kw">=</span><span class="fl">800</span>,<span class="kw">height</span><span class="kw">=</span><span class="fl">800</span>,<span class="kw">samples</span><span class="kw">=</span><span class="fl">1000</span>,<span class="kw">clamp_value</span><span class="kw">=</span><span class="fl">10</span>)</pre></div>
+<span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"cinnemaldehyde"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>lights<span class="op">=</span><span class="st">"both"</span>,width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>,clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-4-2.png" width="100%"></p>
-<div class="sourceCode" id="cb5"><pre class="r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
 <span class="co">#Rotate the molecule and add a non-zero aperture setting to get depth of field effect</span>
-<span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span>(<span class="st">"penicillin"</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span>() <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span>() <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/render_model.html">render_model</a></span>(<span class="kw">lights</span><span class="kw">=</span><span class="st">"both"</span>,<span class="kw">width</span><span class="kw">=</span><span class="fl">800</span>,<span class="kw">height</span><span class="kw">=</span><span class="fl">800</span>,<span class="kw">samples</span><span class="kw">=</span><span class="fl">1000</span>,<span class="kw">angle</span><span class="kw">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>,<span class="fl">30</span>,<span class="fl">0</span>),<span class="kw">aperture</span><span class="kw">=</span><span class="fl">3</span>,
-               <span class="kw">clamp_value</span><span class="kw">=</span><span class="fl">10</span>)</pre></div>
+<span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"penicillin"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>lights<span class="op">=</span><span class="st">"both"</span>,width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>,angle<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">30</span>,<span class="fl">0</span><span class="op">)</span>,aperture<span class="op">=</span><span class="fl">3</span>,
+               clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-4-3.png" width="100%"></p>
-<p>You can turn off lighting in <code><a href="reference/render_model.html">render_model()</a></code> and customize the scene (adding different objects or lights) by using rayrender’s <code><a href="https://rdrr.io/pkg/rayrender/man/add_object.html">add_object()</a></code> function. If you use <code><a href="https://rdrr.io/pkg/rayrender/man/render_scene.html">rayrender::render_scene()</a></code> instead of <code><a href="reference/render_model.html">render_model()</a></code>, you have to set up the camera position and field of view yourself.</p>
-<div class="sourceCode" id="cb6"><pre class="r">
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">rayrender</span>)
+<p>You can turn off lighting in <code><a href="reference/render_model.html">render_model()</a></code> and customize the scene (adding different objects or lights) by using rayrender’s <code><a href="https://www.rayrender.net/reference/add_object.html">add_object()</a></code> function. If you use <code><a href="https://www.rayrender.net/reference/render_scene.html">rayrender::render_scene()</a></code> instead of <code><a href="reference/render_model.html">render_model()</a></code>, you have to set up the camera position and field of view yourself.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://www.rayrender.net">rayrender</a></span><span class="op">)</span>
 
-<span class="no">buckyball</span> <span class="kw">=</span> <span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span>(<span class="st">"buckyball"</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span>() <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span>()
+<span class="va">buckyball</span> <span class="op">=</span> <span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"buckyball"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> 
 
 <span class="co">#Add custom lighting</span>
-<span class="no">buckyball</span> <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/add_object.html">add_object</a></span>(<span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/sphere.html">sphere</a></span>(<span class="kw">y</span><span class="kw">=</span><span class="fl">12</span>,<span class="kw">radius</span><span class="kw">=</span><span class="fl">3</span>,<span class="kw">material</span><span class="kw">=</span><span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/light.html">light</a></span>(<span class="kw">color</span><span class="kw">=</span><span class="st">"white"</span>, <span class="kw">intensity</span><span class="kw">=</span><span class="fl">50</span>))) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/add_object.html">add_object</a></span>(<span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/sphere.html">sphere</a></span>(<span class="kw">y</span><span class="kw">=</span>-<span class="fl">12</span>,<span class="kw">radius</span><span class="kw">=</span><span class="fl">3</span>,<span class="kw">material</span><span class="kw">=</span><span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/light.html">light</a></span>(<span class="kw">color</span><span class="kw">=</span><span class="st">"red"</span>, <span class="kw">intensity</span><span class="kw">=</span><span class="fl">50</span>))) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="reference/render_model.html">render_model</a></span>(<span class="kw">lights</span><span class="kw">=</span><span class="st">"none"</span>,<span class="kw">width</span><span class="kw">=</span><span class="fl">800</span>,<span class="kw">height</span><span class="kw">=</span><span class="fl">800</span>,<span class="kw">samples</span><span class="kw">=</span><span class="fl">1000</span>, <span class="kw">clamp_value</span><span class="kw">=</span><span class="fl">10</span>)</pre></div>
+<span class="va">buckyball</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://www.rayrender.net/reference/add_object.html">add_object</a></span><span class="op">(</span><span class="fu"><a href="https://www.rayrender.net/reference/sphere.html">sphere</a></span><span class="op">(</span>y<span class="op">=</span><span class="fl">12</span>,radius<span class="op">=</span><span class="fl">3</span>,material<span class="op">=</span><span class="fu"><a href="https://www.rayrender.net/reference/light.html">light</a></span><span class="op">(</span>color<span class="op">=</span><span class="st">"white"</span>, intensity<span class="op">=</span><span class="fl">50</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="https://www.rayrender.net/reference/add_object.html">add_object</a></span><span class="op">(</span><span class="fu"><a href="https://www.rayrender.net/reference/sphere.html">sphere</a></span><span class="op">(</span>y<span class="op">=</span><span class="op">-</span><span class="fl">12</span>,radius<span class="op">=</span><span class="fl">3</span>,material<span class="op">=</span><span class="fu"><a href="https://www.rayrender.net/reference/light.html">light</a></span><span class="op">(</span>color<span class="op">=</span><span class="st">"red"</span>, intensity<span class="op">=</span><span class="fl">50</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>lights<span class="op">=</span><span class="st">"none"</span>,width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>, clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-5-1.png" width="100%"></p>
-<div class="sourceCode" id="cb7"><pre class="r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
 <span class="co">#Generate ground underneath the model and use a light to cast a shadow</span>
-<span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/generate_ground.html">generate_ground</a></span>(<span class="kw">depth</span><span class="kw">=</span>-<span class="fl">4</span>,<span class="kw">material</span><span class="kw">=</span><span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/diffuse.html">diffuse</a></span>(<span class="kw">sigma</span><span class="kw">=</span><span class="fl">90</span>)) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/add_object.html">add_object</a></span>(<span class="no">buckyball</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/add_object.html">add_object</a></span>(<span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/sphere.html">sphere</a></span>(<span class="kw">y</span><span class="kw">=</span><span class="fl">8</span>,<span class="kw">material</span><span class="kw">=</span><span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/light.html">light</a></span>(<span class="kw">intensity</span><span class="kw">=</span><span class="fl">100</span>))) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://rdrr.io/pkg/rayrender/man/render_scene.html">render_scene</a></span>(<span class="kw">width</span><span class="kw">=</span><span class="fl">800</span>,<span class="kw">height</span><span class="kw">=</span><span class="fl">800</span>,<span class="kw">samples</span><span class="kw">=</span><span class="fl">1000</span>,<span class="kw">aperture</span><span class="kw">=</span><span class="fl">1</span>,<span class="kw">fov</span><span class="kw">=</span><span class="fl">30</span>,<span class="kw">lookfrom</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">30</span>),
-               <span class="kw">clamp_value</span> <span class="kw">=</span> <span class="fl">10</span>)</pre></div>
+<span class="fu"><a href="https://www.rayrender.net/reference/generate_ground.html">generate_ground</a></span><span class="op">(</span>depth<span class="op">=</span><span class="op">-</span><span class="fl">4</span>,material<span class="op">=</span><span class="fu"><a href="https://www.rayrender.net/reference/diffuse.html">diffuse</a></span><span class="op">(</span>sigma<span class="op">=</span><span class="fl">90</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://www.rayrender.net/reference/add_object.html">add_object</a></span><span class="op">(</span><span class="va">buckyball</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://www.rayrender.net/reference/add_object.html">add_object</a></span><span class="op">(</span><span class="fu"><a href="https://www.rayrender.net/reference/sphere.html">sphere</a></span><span class="op">(</span>y<span class="op">=</span><span class="fl">8</span>,material<span class="op">=</span><span class="fu"><a href="https://www.rayrender.net/reference/light.html">light</a></span><span class="op">(</span>intensity<span class="op">=</span><span class="fl">100</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="https://www.rayrender.net/reference/render_scene.html">render_scene</a></span><span class="op">(</span>width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>,aperture<span class="op">=</span><span class="fl">1</span>,fov<span class="op">=</span><span class="fl">30</span>,lookfrom <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">30</span><span class="op">)</span>,
+               clamp_value <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-5-2.png" width="100%"></p>
 </div>
 </div>
@@ -202,7 +203,7 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.9000.</p>
 </div>
 
       </footer>
