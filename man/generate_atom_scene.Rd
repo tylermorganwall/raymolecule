@@ -4,10 +4,16 @@
 \alias{generate_atom_scene}
 \title{Build Rayrender Scene (atoms only)}
 \usage{
-generate_atom_scene(model, scale = 1, center = TRUE)
+generate_atom_scene(model, x = 0, y = 0, z = 0, scale = 1, center = TRUE)
 }
 \arguments{
 \item{model}{Model extracted from a PDB or SDF file.}
+
+\item{x}{Default `0`. X offset, applied after centering.}
+
+\item{y}{Default `0`. Y offset, applied after centering.}
+
+\item{z}{Default `0`. Z offset, applied after centering.}
 
 \item{scale}{Default `1`. Amount to scale the inter-atom spacing.}
 

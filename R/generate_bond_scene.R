@@ -3,6 +3,9 @@
 #' Reads an SDF file and extracts the 3D molecule model
 #'
 #' @param model Model extracted from a PDB or SDF file.
+#' @param x Default `0`. X offset, applied after centering.
+#' @param y Default `0`. Y offset, applied after centering.
+#' @param z Default `0`. Z offset, applied after centering.
 #' @param scale Default `1`. Amount to scale the interatom spacing.
 #' @param center Default `TRUE`. Centers the bounding box of the model.
 #' @param force_single_bonds Default `FALSE`. Whether to force all bonds to show as a single connection.
@@ -31,7 +34,7 @@
 #'   generate_bond_scene(scale=0.3,force_single_bonds = TRUE) %>%
 #'   render_model(lights = "both")
 #'}
-generate_bond_scene = function(model, scale = 1, center = TRUE, force_single_bonds = FALSE) {
+generate_bond_scene = function(model, x=0, y=0, z=0, scale = 1, center = TRUE, force_single_bonds = FALSE) {
   atoms = model$atoms
   atoms$x = atoms$x * scale
   atoms$y = atoms$y * scale
@@ -41,6 +44,9 @@ generate_bond_scene = function(model, scale = 1, center = TRUE, force_single_bon
     atoms$y = atoms$y - mean(range(atoms$y))
     atoms$z = atoms$z - mean(range(atoms$z))
   }
+  atoms$x = atoms$x + x
+  atoms$y = atoms$y + y
+  atoms$z = atoms$z + z
 
   bonds = model$bonds
 

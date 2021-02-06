@@ -6,6 +6,9 @@
 \usage{
 generate_full_scene(
   model,
+  x = 0,
+  y = 0,
+  z = 0,
   scale = 1,
   center = TRUE,
   force_single_bonds = FALSE
@@ -13,6 +16,12 @@ generate_full_scene(
 }
 \arguments{
 \item{model}{Model extracted from a PDB or SDF file.}
+
+\item{x}{Default `0`. X offset, applied after centering.}
+
+\item{y}{Default `0`. Y offset, applied after centering.}
+
+\item{z}{Default `0`. Z offset, applied after centering.}
 
 \item{scale}{Default `1`. Amount to scale the interatom spacing.}
 
