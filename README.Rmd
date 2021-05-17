@@ -36,11 +36,12 @@ remotes::install_github("tylermorganwall/raymolecule")
 
 ## Examples
 
-`raymolecule` includes several example SDF files for the following molecules: "benzene", "buckyball", "caffeine", "capsaicin", "cinnemaldehyde", "geraniol", "luciferin", "morphine", "penicillin", "pfoa", "skatole", "tubocurarine_chloride". You can get the file path to these example files using the `get_example_molecule()` function. We pass this path to the `read_sdf()` file to parse the file and extract the atom coordinates and bond information in a list. The magrittr pipe is automatically imported in the package, so we will use it to pass the output of each function to the input of the next.
+`raymolecule` includes several example SDF files for the following molecules: "benzene", "buckyball", "caffeine", "capsaicin", "cinnemaldehyde", "geraniol", "luciferin", "morphine", "penicillin", "pfoa", "skatole", "tubocurarine_chloride". You can get the file path to these example files using the `get_example_molecule()` function. We pass this path to the `read_sdf()` file to parse the file and extract the atom coordinates and bond information in a list. `raymolecule` also includes the ability to fetch molecules from PubChem using the `get_molecule()` function. The magrittr pipe is automatically imported in the package, so we will use it to pass the output of each function to the input of the next.
 
 Here's the format of the data:
 
 ```{r}
+
 library(raymolecule)
 
 get_example_molecule("benzene") %>%
@@ -48,7 +49,17 @@ get_example_molecule("benzene") %>%
 
 ```
 
-We can then pass this list to the `generate_full_scene()`, `generate_atom_scene()`, or `generate_bond_scene()` functions to convert this representation to a rayrender scene. This can then be passed on the `render_model()` function, which will call rayrender's `render_scene()` function to render it. This function automatically ensures the molecule is centered and in frame, and sets up lighting, and can accept arguments to rotate the molecule. For more rendering options, see `rayrender::render_scene()`.
+Alternatively, you can fetch any molecule from [PubChem](https://pubchem.ncbi.nlm.nih.gov) by passing either the molecule name. You can also fetch a molecule using the official compound ID (CID), in case you have a specific molecule with a long name or unique isoform:  
+  
+```{r}
+
+get_molecule("estradiol")
+
+get_molecule(5757) #this is the CID for estradiol (aka estrogen)
+
+```
+
+We can then pass the list from `get_example_molecule() %>% read_sdf()` or from `get_molecule()` to the `generate_full_scene()`, `generate_atom_scene()`, or `generate_bond_scene()` functions to convert this representation to a rayrender scene. This can then be passed on the `render_model()` function, which will call rayrender's `render_scene()` function to render it. This function automatically ensures the molecule is centered and in frame, and sets up lighting, and can accept arguments to rotate the molecule. For more rendering options, see `rayrender::render_scene()`.
 
 
 ```{r}
