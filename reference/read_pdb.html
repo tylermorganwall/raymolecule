@@ -60,9 +60,16 @@ connections." />
 
 
 
+
+  
+
+  
+
   </head>
 
   <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -128,7 +135,7 @@ information currently). This pulls out ATOM and HETAHM records by default, along
 connections.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>read_pdb</span><span class='op'>(</span><span class='va'>filename</span>, atom <span class='op'>=</span> <span class='cn'>TRUE</span>, nsr <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
+    <div class="ref-usage sourceCode"><pre class='sourceCode r'><code><span class='fu'>read_pdb</span><span class='op'>(</span><span class='va'>filename</span>, atom <span class='op'>=</span> <span class='cn'>TRUE</span>, nsr <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></code></pre></div>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -152,13 +159,13 @@ connections.</p>
     <p>List giving the atom locations.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='co'>#This assumes a hypothetical PDB file in your working directory:</span>
-<span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='fu'>read_pdb</span><span class='op'>(</span><span class='st'>"3nir.pdb"</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'><a href='generate_full_scene.html'>generate_full_scene</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'><a href='render_model.html'>render_model</a></span><span class='op'>(</span><span class='op'>)</span>
-<span class='op'>}</span>
-</div></pre>
+    <div class="ref-examples sourceCode"><pre class='sourceCode r'><code><span class='r-in'><span class='co'>#This assumes a hypothetical PDB file in your working directory:</span></span>
+<span class='r-in'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span></span>
+<span class='r-in'><span class='fu'>read_pdb</span><span class='op'>(</span><span class='st'>"3nir.pdb"</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
+<span class='r-in'>  <span class='fu'><a href='generate_full_scene.html'>generate_full_scene</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
+<span class='r-in'>  <span class='fu'><a href='render_model.html'>render_model</a></span><span class='op'>(</span><span class='op'>)</span></span>
+<span class='r-in'><span class='op'>}</span></span>
+</code></pre></div>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -170,11 +177,11 @@ connections.</p>
 
       <footer>
       <div class="copyright">
-  <p>Developed by <a href='https://www.tylermw.com'>Tyler Morgan-Wall</a>.</p>
+  <p><p>Developed by <a href="https://www.tylermw.com" class="external-link">Tyler Morgan-Wall</a>.</p></p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.9000.</p>
+  <p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 1.6.1.9001.</p></p>
 </div>
 
       </footer>
@@ -182,6 +189,8 @@ connections.</p>
 
   
 
+
+  
 
   </body>
 </html>

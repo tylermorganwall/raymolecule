@@ -58,9 +58,16 @@
 
 
 
+
+  
+
+  
+
   </head>
 
   <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -124,7 +131,7 @@
     <p>Reads an SDF file and extracts the 3D molecule model</p>
     </div>
 
-    <pre class="usage"><span class='fu'>generate_bond_scene</span><span class='op'>(</span>
+    <div class="ref-usage sourceCode"><pre class='sourceCode r'><code><span class='fu'>generate_bond_scene</span><span class='op'>(</span>
   <span class='va'>model</span>,
   x <span class='op'>=</span> <span class='fl'>0</span>,
   y <span class='op'>=</span> <span class='fl'>0</span>,
@@ -132,7 +139,7 @@
   scale <span class='op'>=</span> <span class='fl'>1</span>,
   center <span class='op'>=</span> <span class='cn'>TRUE</span>,
   force_single_bonds <span class='op'>=</span> <span class='cn'>FALSE</span>
-<span class='op'>)</span></pre>
+<span class='op'>)</span></code></pre></div>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -172,26 +179,29 @@
     <p>Rayrender scene (tibble) containing only the connections between atoms in a molecule/protein.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='co'>#Generate a scene with benzene molecule with just the atoms</span>
-<span class='co'># \donttest{</span>
-<span class='fu'><a href='get_example_molecule.html'>get_example_molecule</a></span><span class='op'>(</span><span class='st'>"benzene"</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'><a href='read_sdf.html'>read_sdf</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'>generate_bond_scene</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'><a href='render_model.html'>render_model</a></span><span class='op'>(</span>lights <span class='op'>=</span> <span class='st'>"both"</span><span class='op'>)</span>
-</div><div class='img'><img src='generate_bond_scene-1.png' alt='' width='700' height='433' /></div><div class='input'>
-<span class='co'>#Force single bonds to just show the shape of the molecule</span>
-<span class='fu'><a href='get_example_molecule.html'>get_example_molecule</a></span><span class='op'>(</span><span class='st'>"benzene"</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'><a href='read_sdf.html'>read_sdf</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'>generate_bond_scene</span><span class='op'>(</span>force_single_bonds <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'><a href='render_model.html'>render_model</a></span><span class='op'>(</span>lights <span class='op'>=</span> <span class='st'>"both"</span><span class='op'>)</span>
-</div><div class='img'><img src='generate_bond_scene-2.png' alt='' width='700' height='433' /></div><div class='input'>
-<span class='co'>#Generate a scene with PFOA, reducing the inter-atom spacing</span>
-<span class='fu'><a href='get_example_molecule.html'>get_example_molecule</a></span><span class='op'>(</span><span class='st'>"pfoa"</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'><a href='read_sdf.html'>read_sdf</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'>generate_bond_scene</span><span class='op'>(</span>scale<span class='op'>=</span><span class='fl'>0.3</span>,force_single_bonds <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'><a href='render_model.html'>render_model</a></span><span class='op'>(</span>lights <span class='op'>=</span> <span class='st'>"both"</span><span class='op'>)</span>
-</div><div class='img'><img src='generate_bond_scene-3.png' alt='' width='700' height='433' /></div><div class='input'><span class='co'># }</span>
-</div></pre>
+    <div class="ref-examples sourceCode"><pre class='sourceCode r'><code><span class='r-in'><span class='co'>#Generate a scene with benzene molecule with just the atoms</span></span>
+<span class='r-in'><span class='co'># \donttest{</span></span>
+<span class='r-in'><span class='fu'><a href='get_example_molecule.html'>get_example_molecule</a></span><span class='op'>(</span><span class='st'>"benzene"</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
+<span class='r-in'>  <span class='fu'><a href='read_sdf.html'>read_sdf</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
+<span class='r-in'>  <span class='fu'>generate_bond_scene</span><span class='op'>(</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
+<span class='r-in'>  <span class='fu'><a href='render_model.html'>render_model</a></span><span class='op'>(</span>lights <span class='op'>=</span> <span class='st'>"both"</span><span class='op'>)</span></span>
+<span class='r-plt'><img src='generate_bond_scene-1.png' alt='' width='700' height='433' /></span>
+<span class='r-in'></span>
+<span class='r-in'><span class='co'>#Force single bonds to just show the shape of the molecule</span></span>
+<span class='r-in'><span class='fu'><a href='get_example_molecule.html'>get_example_molecule</a></span><span class='op'>(</span><span class='st'>"benzene"</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
+<span class='r-in'>  <span class='fu'><a href='read_sdf.html'>read_sdf</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
+<span class='r-in'>  <span class='fu'>generate_bond_scene</span><span class='op'>(</span>force_single_bonds <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
+<span class='r-in'>  <span class='fu'><a href='render_model.html'>render_model</a></span><span class='op'>(</span>lights <span class='op'>=</span> <span class='st'>"both"</span><span class='op'>)</span></span>
+<span class='r-plt'><img src='generate_bond_scene-2.png' alt='' width='700' height='433' /></span>
+<span class='r-in'></span>
+<span class='r-in'><span class='co'>#Generate a scene with PFOA, reducing the inter-atom spacing</span></span>
+<span class='r-in'><span class='fu'><a href='get_example_molecule.html'>get_example_molecule</a></span><span class='op'>(</span><span class='st'>"pfoa"</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
+<span class='r-in'>  <span class='fu'><a href='read_sdf.html'>read_sdf</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
+<span class='r-in'>  <span class='fu'>generate_bond_scene</span><span class='op'>(</span>scale<span class='op'>=</span><span class='fl'>0.3</span>,force_single_bonds <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
+<span class='r-in'>  <span class='fu'><a href='render_model.html'>render_model</a></span><span class='op'>(</span>lights <span class='op'>=</span> <span class='st'>"both"</span><span class='op'>)</span></span>
+<span class='r-plt'><img src='generate_bond_scene-3.png' alt='' width='700' height='433' /></span>
+<span class='r-in'><span class='co'># }</span></span>
+</code></pre></div>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -203,11 +213,11 @@
 
       <footer>
       <div class="copyright">
-  <p>Developed by <a href='https://www.tylermw.com'>Tyler Morgan-Wall</a>.</p>
+  <p><p>Developed by <a href="https://www.tylermw.com" class="external-link">Tyler Morgan-Wall</a>.</p></p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.9000.</p>
+  <p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 1.6.1.9001.</p></p>
 </div>
 
       </footer>
@@ -215,6 +225,8 @@
 
   
 
+
+  
 
   </body>
 </html>

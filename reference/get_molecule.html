@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Build Rayrender Scene (atoms only) — generate_atom_scene • raymolecule</title>
+<title>Get Molecule — get_molecule • raymolecule</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="Build Rayrender Scene (atoms only) — generate_atom_scene" />
-<meta property="og:description" content="Reads an SDF file and extracts the 3D molecule model" />
+<meta property="og:title" content="Get Molecule — get_molecule" />
+<meta property="og:description" content="Loads the structure of a molecule by fetching an SDF file from Pubchem, which can be piped to generate_full_scene" />
 
 
 
@@ -122,66 +122,37 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Build Rayrender Scene (atoms only)</h1>
+    <h1>Get Molecule</h1>
     
-    <div class="hidden name"><code>generate_atom_scene.Rd</code></div>
+    <div class="hidden name"><code>get_molecule.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Reads an SDF file and extracts the 3D molecule model</p>
+    <p>Loads the structure of a molecule by fetching an SDF file from Pubchem, which can be piped to generate_full_scene</p>
     </div>
 
-    <div class="ref-usage sourceCode"><pre class='sourceCode r'><code><span class='fu'>generate_atom_scene</span><span class='op'>(</span><span class='va'>model</span>, x <span class='op'>=</span> <span class='fl'>0</span>, y <span class='op'>=</span> <span class='fl'>0</span>, z <span class='op'>=</span> <span class='fl'>0</span>, scale <span class='op'>=</span> <span class='fl'>1</span>, center <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></code></pre></div>
+    <div class="ref-usage sourceCode"><pre class='sourceCode r'><code><span class='fu'>get_molecule</span><span class='op'>(</span><span class='va'>molecule</span><span class='op'>)</span></code></pre></div>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>model</th>
-      <td><p>Model extracted from a PDB or SDF file.</p></td>
-    </tr>
-    <tr>
-      <th>x</th>
-      <td><p>Default `0`. X offset, applied after centering.</p></td>
-    </tr>
-    <tr>
-      <th>y</th>
-      <td><p>Default `0`. Y offset, applied after centering.</p></td>
-    </tr>
-    <tr>
-      <th>z</th>
-      <td><p>Default `0`. Z offset, applied after centering.</p></td>
-    </tr>
-    <tr>
-      <th>scale</th>
-      <td><p>Default `1`. Amount to scale the inter-atom spacing.</p></td>
-    </tr>
-    <tr>
-      <th>center</th>
-      <td><p>Default `TRUE`. Centers the bounding box of the model.</p></td>
+      <th>molecule</th>
+      <td><p>A character variable of a compound name or a numeric variable of an official compound ID</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>Rayrender scene (tibble) containing only the atoms in a molecule/protein.</p>
+    <p>List giving the atom locations and the connections between atoms.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <div class="ref-examples sourceCode"><pre class='sourceCode r'><code><span class='r-in'><span class='co'>#Generate a scene with caffeine molecule with just the atoms</span></span>
-<span class='r-in'><span class='co'># \donttest{</span></span>
-<span class='r-in'><span class='fu'><a href='get_example_molecule.html'>get_example_molecule</a></span><span class='op'>(</span><span class='st'>"caffeine"</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
-<span class='r-in'>  <span class='fu'><a href='read_sdf.html'>read_sdf</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
-<span class='r-in'>  <span class='fu'>generate_atom_scene</span><span class='op'>(</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
-<span class='r-in'>  <span class='fu'><a href='render_model.html'>render_model</a></span><span class='op'>(</span><span class='op'>)</span></span>
-<span class='r-plt'><img src='generate_atom_scene-1.png' alt='' width='700' height='433' /></span>
-<span class='r-in'></span>
-<span class='r-in'><span class='co'>#Generate a scene with caffeine, reducing the inter-atom spacing</span></span>
-<span class='r-in'><span class='fu'><a href='get_example_molecule.html'>get_example_molecule</a></span><span class='op'>(</span><span class='st'>"caffeine"</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
-<span class='r-in'>  <span class='fu'><a href='read_sdf.html'>read_sdf</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
-<span class='r-in'>  <span class='fu'>generate_atom_scene</span><span class='op'>(</span>scale<span class='op'>=</span><span class='fl'>0.5</span><span class='op'>)</span> <span class='op'><a href='pipe.html'>%&gt;%</a></span></span>
-<span class='r-in'>  <span class='fu'><a href='render_model.html'>render_model</a></span><span class='op'>(</span><span class='op'>)</span></span>
-<span class='r-plt'><img src='generate_atom_scene-2.png' alt='' width='700' height='433' /></span>
-<span class='r-in'><span class='co'># }</span></span>
+    <div class="ref-examples sourceCode"><pre class='sourceCode r'><code><span class='r-in'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span></span>
+<span class='r-in'><span class='fu'>get_molecule</span><span class='op'>(</span><span class='st'>"caffeine"</span><span class='op'>)</span></span>
+<span class='r-in'><span class='fu'>get_molecule</span><span class='op'>(</span><span class='fl'>5757</span><span class='op'>)</span> <span class='co'>#estradiol (aka estrogen)</span></span>
+<span class='r-in'><span class='fu'>get_molecule</span><span class='op'>(</span><span class='st'>"testosterone"</span><span class='op'>)</span></span>
+<span class='r-in'><span class='fu'>get_molecule</span><span class='op'>(</span><span class='st'>"aspirin"</span><span class='op'>)</span></span>
+<span class='r-in'><span class='op'>}</span></span>
 </code></pre></div>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
