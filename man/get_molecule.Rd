@@ -17,9 +17,30 @@ Loads the structure of a molecule by fetching an SDF file from Pubchem, which ca
 }
 \examples{
 \donttest{
-get_molecule("caffeine")
-get_molecule(5757) #estradiol (aka estrogen)
-get_molecule("testosterone")
-get_molecule("aspirin")
+get_molecule("caffeine") \%>\%
+  generate_full_scene() \%>\%
+  render_model()
+
+#estradiol (aka estrogen)
+get_molecule(5757) \%>\%
+  generate_full_scene() \%>\%
+  render_model()
+
+get_molecule("testosterone") \%>\%
+  generate_full_scene() \%>\%
+  render_model()
+
+get_molecule("aspirin") \%>\%
+  generate_full_scene() \%>\%
+  render_model()
+
+get_molecule("rutoside") \%>\%
+  generate_full_scene() \%>\%
+  render_model()
+
+#If the 3D SDF doesn't exist, this function will pull the 2D SDF and inform the user
+get_molecule("cyanocobalamin") \%>\%
+  generate_full_scene() \%>\%
+  render_model()
 }
 }

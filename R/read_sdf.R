@@ -41,6 +41,9 @@ read_sdf = function(filename) {
   moleculedf[,1] = as.numeric(moleculedf[,1])
   moleculedf[,2] = as.numeric(moleculedf[,2])
   moleculedf[,3] = as.numeric(moleculedf[,3])
+  if(all(moleculedf[,3] == 0)) {
+    message("Loaded SDF is 2D")
+  }
   colnames(moleculedf) = c("x","y","z","type","index")
   bondlist = list()
   for(i in seq_len(bonds)) {
