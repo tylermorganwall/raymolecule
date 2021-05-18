@@ -8,27 +8,28 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' get_molecule("caffeine")
 #' get_molecule(5757) #estradiol (aka estrogen)
+#' get_molecule("testosterone")
 #' get_molecule("aspirin")
+#' }
 get_molecule = function(molecule) {
   #molecule details
   if (is.numeric(molecule)) {    #assume it is a CID
-    url <- paste0("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/", molecule, "/SDF")
+    url = sprintf("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/%s/SDF",molecule)
   } else if (is.character(molecule)) {    #assume it is a compound name
-    url <- paste0("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/", molecule, "/SDF")
+    url = sprintf("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/%s/SDF",molecule)
   } else {
     stop("Provide a quoted compound name (character) or an unquoted compound ID (numeric)")
   }
 
-  status <- httr::GET(url) %>%
-    httr::status_code()
+  status = httr::status_code(httr::GET(url))
 
   if (status == 200) {
-    molecule_sdf <-
-      raymolecule::read_sdf(url)
+    molecule_sdf = read_sdf(url)
   } else {
-    stop("Cannot find your compound. Check the compound name or compound ID (CID)")
+    stop(sprintf("Cannot find compound '%s'. Check the compound name or compound ID (CID)", molecule))
   }
   return(molecule_sdf)
 }
