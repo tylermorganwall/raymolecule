@@ -13,6 +13,7 @@ Imports:
     rayrender,
     magrittr,
     tibble,
-    PeriodicTable
+    PeriodicTable, 
+    httr
 LazyData: true
 RoxygenNote: 7.1.0
