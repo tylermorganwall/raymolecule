@@ -9,7 +9,7 @@
 #'
 #' @examples
 #' #This assumes a hypothetical SDF file in your working directory:
-#' \dontrun{
+#' \donttest{
 #' read_pdb("molecule.sdf") %>%
 #'   generate_full_scene() %>%
 #'   render_model()

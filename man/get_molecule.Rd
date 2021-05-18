@@ -16,7 +16,7 @@ List giving the atom locations and the connections between atoms.
 Loads the structure of a molecule by fetching an SDF file from Pubchem, which can be piped to generate_full_scene
 }
 \examples{
-\dontrun{
+\donttest{
 get_molecule("caffeine")
 get_molecule(5757) #estradiol (aka estrogen)
 get_molecule("testosterone")

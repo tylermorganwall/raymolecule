@@ -8,7 +8,7 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' get_molecule("caffeine")
 #' get_molecule(5757) #estradiol (aka estrogen)
 #' get_molecule("testosterone")
