@@ -27,7 +27,7 @@ onb_from_w = function(n) {
   if(a1[1] > 0.999999) {
     a = c(0,1,0)
   } else {
-    a = c(1,0,0)
+    a = c(0,0,1)
   }
   a2 = unit_vector(cross(a1,a))
   a3 = cross(a1, a2)
