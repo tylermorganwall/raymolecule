@@ -27,9 +27,9 @@ is a single number, it will be taken as the Y axis rotation.}
 \item{lights}{Default `top`. If `none`, removes all lights. If `bottom`, lights scene with light
 underneath model. If `both`, adds lights both above and below model.}
 
-\item{lightintensity}{Default `80`. Light intensity.}
+\item{lightintensity}{Default `80`. Light intensity for pathtraced scenes.}
 
-\item{...}{Other arguments to pass to rayrender::render_scene()}
+\item{...}{Other arguments to pass to `rayrender::render_scene()` or `rayvertex::rasterize_scene()`}
 }
 \value{
 List giving the atom locations and the connections between atoms.

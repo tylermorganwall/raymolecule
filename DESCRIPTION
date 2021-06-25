@@ -14,6 +14,7 @@ Imports:
     magrittr,
     tibble,
     PeriodicTable, 
-    httr
+    httr,
+    rayvertex
 LazyData: true
 RoxygenNote: 7.1.1

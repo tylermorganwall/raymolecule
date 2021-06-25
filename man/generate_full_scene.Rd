@@ -2,7 +2,7 @@
 % Please edit documentation in R/generate_full_scene.R
 \name{generate_full_scene}
 \alias{generate_full_scene}
-\title{Build Rayrender Scene (bonds + atoms)}
+\title{Build Atom Scene (bonds + atoms)}
 \usage{
 generate_full_scene(
   model,
@@ -11,7 +11,9 @@ generate_full_scene(
   z = 0,
   scale = 1,
   center = TRUE,
-  force_single_bonds = FALSE
+  pathtrace = TRUE,
+  force_single_bonds = FALSE,
+  material_vertex = material_list()
 )
 }
 \arguments{
@@ -28,9 +30,11 @@ generate_full_scene(
 \item{center}{Default `TRUE`. Centers the bounding box of the model.}
 
 \item{force_single_bonds}{Default `FALSE`. Whether to force all bonds to show as a single connection.}
+
+\item{renderer}{Default `rayrender`. Other option: `rayvertex`.}
 }
 \value{
-Rayrender scene (tibble) containing the atoms and bonds in a molecule/protein.
+Rayrender/rayvertex scene
 }
 \description{
 Reads an SDF file and extracts the 3D molecule model
