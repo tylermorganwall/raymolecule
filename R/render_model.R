@@ -134,8 +134,7 @@ render_model = function(scene, fov = NULL, angle = c(0,0,0), order_rotation = c(
         if (lights == "top") {
           light = add_light(directional_light(c(1,1,1)), directional_light(c(1,1,-1)))
         } else {
-          light =
-            add_light(directional_light(c(1,1,1)), add_light(directional_light(c(-1,1,-1)),
+          light = add_light(directional_light(c(1,1,1)), add_light(directional_light(c(-1,1,-1)),
             directional_light(c(0,-1,0))))
         }
       }
