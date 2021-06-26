@@ -1,4 +1,4 @@
-#' Build Atom Scene (bonds + atoms)
+#' Build  Scene (bonds + atoms)
 #'
 #' Reads an SDF file and extracts the 3D molecule model
 #'
@@ -9,10 +9,15 @@
 #' @param scale Default `1`. Amount to scale the interatom spacing.
 #' @param center Default `TRUE`. Centers the bounding box of the model.
 #' @param force_single_bonds Default `FALSE`. Whether to force all bonds to show as a single connection.
-#' @param renderer Default `rayrender`. Other option: `rayvertex`.
+#' @param pathtrace Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.
+#' @param material_vertex Default `rayvertex::material_list()`. Material to use when `pathtrace = FALSE`.
+#' `diffuse`/`ambient` colors and `ambient_intensity` are determined automatically, but all other material
+#' properties can be changed.
+#'
 #'
 #' @return Rayrender/rayvertex scene
-#' @import rayrender rayvertex
+#' @importFrom rayrender render_scene glossy sphere segment add_object
+#' @importFrom rayvertex rasterize_scene material_list sphere_mesh segment_mesh add_shape
 #' @export
 #'
 #' @examples
@@ -23,21 +28,38 @@
 #'   generate_full_scene() %>%
 #'   render_model()
 #'
+#' #Generate a rayvertex scene with a custom material
+#' get_example_molecule("caffeine") %>%
+#'   read_sdf() %>%
+#'   generate_full_scene(pathtrace=FALSE, material=rayvertex::material_list(type="phong")) %>%
+#'   render_model(background="grey33")
+#'
+#' #Generate a rayvertex scene, using toon shading
+#' shiny_toon_material = rayvertex::material_list(type="toon_phong",
+#'                                                toon_levels=3,
+#'                                                toon_outline_width=0.1)
+#' get_example_molecule("caffeine") %>%
+#'   read_sdf() %>%
+#'   generate_full_scene(pathtrace=FALSE, material=shiny_toon_material) %>%
+#'   render_model(background="grey66")
+#'
 #' # Generate a scene with morphine, increasing the inter-atom spacing
 #' get_example_molecule("tubocurarine_chloride") %>%
 #'   read_sdf() %>%
 #'   generate_full_scene(scale=1.5) %>%
 #'   render_model()
 #'
+#'
 #' # Force bonds to appear as a single link (to focus purely on the shape of the molecule)
 #' get_example_molecule("tubocurarine_chloride") %>%
 #'   read_sdf() %>%
 #'   generate_full_scene(force_single_bonds = TRUE) %>%
 #'   render_model()
+#'
 #'}
 generate_full_scene = function(model, x=0,y=0,z=0, scale = 1, center = TRUE, pathtrace = TRUE,
                                force_single_bonds = FALSE,
-                               material_vertex = material_list()) {
+                               material_vertex = material_list(type="phong")) {
   atoms = model$atoms
   atoms$x = atoms$x * scale
   atoms$y = atoms$y * scale
@@ -159,7 +181,7 @@ generate_full_scene = function(model, x=0,y=0,z=0, scale = 1, center = TRUE, pat
       else if (bonds[i, 3] == 2) {
         if (any(bond1) && any(bond2)) {
           dir = as.numeric(atoms[bond2, 1:3]) - as.numeric(atoms[bond1, 1:3])
-          onb = raymolecule:::onb_from_w(dir)
+          onb = onb_from_w(dir)
           scene = add_shape(scene, segment_mesh(start = as.numeric(atoms[bond1, 1:3]) + onb[3, ]/8, end = as.numeric(atoms[bond2, 1:3]) + onb[3, ]/8,
                                                 radius = 1/10,
                                                 material = material_bond))
@@ -171,7 +193,7 @@ generate_full_scene = function(model, x=0,y=0,z=0, scale = 1, center = TRUE, pat
       else if (bonds[i, 3] == 3) {
         if (any(bond1) && any(bond2)) {
           dir = as.numeric(atoms[bond2, 1:3]) - as.numeric(atoms[bond1,1:3])
-          onb = raymolecule:::onb_from_w(dir)
+          onb = onb_from_w(dir)
           scene = add_shape(scene, segment_mesh(start = as.numeric(atoms[bond1,1:3]) + onb[3, ]/4, end = as.numeric(atoms[bond2, 1:3]) + onb[3, ]/4,
                                                 radius = 1/10,
                                                 material = material_bond))

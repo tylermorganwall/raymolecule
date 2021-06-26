@@ -12,12 +12,14 @@
 #' is a single number, it will be taken as the Y axis rotation.
 #' @param order_rotation Default `c(1,2,3)`. What order to apply the rotations specified in `angle`.
 #' @param lights Default `top`. If `none`, removes all lights. If `bottom`, lights scene with light
-#' underneath model. If `both`, adds lights both above and below model.
+#' underneath model. If `both`, adds lights both above and below model. This can also be a matrix of
+#' light information generated with `rayvertex`.
 #' @param lightintensity Default `80`. Light intensity for pathtraced scenes.
 #' @param ... Other arguments to pass to `rayrender::render_scene()` or `rayvertex::rasterize_scene()`
 #'
 #' @return Rendered image
-#' @import rayrender rayvertex
+#' @importFrom rayrender render_scene glossy sphere segment add_object light group_objects
+#' @importFrom rayvertex rasterize_scene material_list sphere_mesh segment_mesh add_shape directional_light add_light rotate_mesh
 #' @export
 #'
 #' @examples
@@ -41,11 +43,20 @@
 #'   generate_full_scene() %>%
 #'   render_model(lights = "both", samples=400, width=800, height=800)
 #'
+#' #Render the scene with rayvertex and custom lights
+#' get_example_molecule("penicillin") %>%
+#'   read_sdf() %>%
+#'   generate_full_scene(pathtrace=FALSE) %>%
+#'   render_model(width=800, height=800,background="grey66",
+#'                lights = rayvertex::directional_light(c(0.2,1,1)))
+#'
 #' #Rotate the molecule 30 degrees around the y axis, and the 30 degrees around the z axis
 #' get_example_molecule("penicillin") %>%
 #'   read_sdf() %>%
 #'   generate_full_scene() %>%
 #'   render_model(lights = "both", samples=400, width=800, height=800, angle=c(0,30,30))
+#'
+#'
 #'
 #' #Add a checkered plane underneath, using rayrender::add_object and rayrender::xz_rect().
 #' #We also pass a value to `clamp_value` to minimize fireflies (bright spots).
@@ -118,14 +129,18 @@ render_model = function(scene, fov = NULL, angle = c(0,0,0), order_rotation = c(
     render_scene(scene = scene,
                  fov = fov, lookfrom = c(0,0,widest*5), ...)
   } else {
-    if(lights != "none") {
-      if (lights == "top") {
-        light = add_light(directional_light(c(1,1,1)), directional_light(c(1,1,-1)))
-      } else {
-        light =
-          add_light(directional_light(c(1,1,1)), add_light(directional_light(c(-1,1,-1)),
-          directional_light(c(0,-1,0))))
+    if(is.character(lights)) {
+      if(lights != "none") {
+        if (lights == "top") {
+          light = add_light(directional_light(c(1,1,1)), directional_light(c(1,1,-1)))
+        } else {
+          light =
+            add_light(directional_light(c(1,1,1)), add_light(directional_light(c(-1,1,-1)),
+            directional_light(c(0,-1,0))))
+        }
       }
+    } else if(is.matrix(lights)) {
+      light = lights
     }
     scene = rotate_mesh(scene, angle=angle,order_rotation=order_rotation)
     rasterize_scene(scene = scene, lookat=c(0,0,0),

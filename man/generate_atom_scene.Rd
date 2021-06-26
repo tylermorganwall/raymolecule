@@ -2,9 +2,18 @@
 % Please edit documentation in R/generate_atom_scene.R
 \name{generate_atom_scene}
 \alias{generate_atom_scene}
-\title{Build Rayrender Scene (atoms only)}
+\title{Build Scene (atoms only)}
 \usage{
-generate_atom_scene(model, x = 0, y = 0, z = 0, scale = 1, center = TRUE)
+generate_atom_scene(
+  model,
+  x = 0,
+  y = 0,
+  z = 0,
+  scale = 1,
+  center = TRUE,
+  pathtrace = TRUE,
+  material_vertex = material_list(type = "phong")
+)
 }
 \arguments{
 \item{model}{Model extracted from a PDB or SDF file.}
@@ -18,9 +27,15 @@ generate_atom_scene(model, x = 0, y = 0, z = 0, scale = 1, center = TRUE)
 \item{scale}{Default `1`. Amount to scale the inter-atom spacing.}
 
 \item{center}{Default `TRUE`. Centers the bounding box of the model.}
+
+\item{pathtrace}{Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.}
+
+\item{material_vertex}{Default `rayvertex::material_list()`. Material to use when `pathtrace = FALSE`.
+`diffuse`/`ambient` colors and `ambient_intensity` are determined automatically, but all other material
+properties can be changed.}
 }
 \value{
-Rayrender scene (tibble) containing only the atoms in a molecule/protein.
+Rayrender/rayvertex scene containing only the atoms in a molecule/protein.
 }
 \description{
 Reads an SDF file and extracts the 3D molecule model
@@ -32,6 +47,15 @@ get_example_molecule("caffeine") \%>\%
   read_sdf() \%>\%
   generate_atom_scene() \%>\%
   render_model()
+
+#Generate a rayvertex scene, using toon shading
+shiny_toon_material = rayvertex::material_list(type="toon_phong",
+                                               toon_levels=3,
+                                               toon_outline_width=0.1)
+get_example_molecule("caffeine") \%>\%
+  read_sdf() \%>\%
+  generate_atom_scene(pathtrace=FALSE, material_vertex = shiny_toon_material) \%>\%
+  render_model(background="white")
 
 #Generate a scene with caffeine, reducing the inter-atom spacing
 get_example_molecule("caffeine") \%>\%

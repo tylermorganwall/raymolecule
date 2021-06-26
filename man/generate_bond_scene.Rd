@@ -2,7 +2,7 @@
 % Please edit documentation in R/generate_bond_scene.R
 \name{generate_bond_scene}
 \alias{generate_bond_scene}
-\title{Build Rayrender Scene (bonds only)}
+\title{Build Scene (bonds only)}
 \usage{
 generate_bond_scene(
   model,
@@ -11,7 +11,10 @@ generate_bond_scene(
   z = 0,
   scale = 1,
   center = TRUE,
-  force_single_bonds = FALSE
+  force_single_bonds = FALSE,
+  pathtrace = TRUE,
+  material_vertex = material_list(diffuse = "grey33", ambient = "grey33", type =
+    "phong", ambient_intensity = 0.3)
 )
 }
 \arguments{
@@ -28,9 +31,14 @@ generate_bond_scene(
 \item{center}{Default `TRUE`. Centers the bounding box of the model.}
 
 \item{force_single_bonds}{Default `FALSE`. Whether to force all bonds to show as a single connection.}
+
+\item{pathtrace}{Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.}
+
+\item{material_vertex}{Default `material_list(diffuse="grey33",ambient="grey33",type="phong", ambient_intensity=0.3)`.
+Material to use for the bonds when `pathtrace = FALSE`.}
 }
 \value{
-Rayrender scene (tibble) containing only the connections between atoms in a molecule/protein.
+Rayrender/rayvertex scene containing only the connections between atoms in a molecule/protein.
 }
 \description{
 Reads an SDF file and extracts the 3D molecule model

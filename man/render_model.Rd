@@ -25,20 +25,21 @@ is a single number, it will be taken as the Y axis rotation.}
 \item{order_rotation}{Default `c(1,2,3)`. What order to apply the rotations specified in `angle`.}
 
 \item{lights}{Default `top`. If `none`, removes all lights. If `bottom`, lights scene with light
-underneath model. If `both`, adds lights both above and below model.}
+underneath model. If `both`, adds lights both above and below model. This can also be a matrix of
+light information generated with `rayvertex`.}
 
 \item{lightintensity}{Default `80`. Light intensity for pathtraced scenes.}
 
 \item{...}{Other arguments to pass to `rayrender::render_scene()` or `rayvertex::rasterize_scene()`}
 }
 \value{
-List giving the atom locations and the connections between atoms.
+Rendered image
 }
 \description{
 Automatically plots the molecule with a camera position and field of view that includes the full model.
-For more control over the scene, pass the scene to `rayrender::render_scene()` and specify
+For more control over the scene, pass the scene to `rayrender::render_scene()` or `rayvertex::rasterize_scene()` and specify
 the camera position manually. Note: spheres and cylinders in the scene are used to automatically
-compute the field of view of the scene--adding additional sphere (e.g. with `rayrender::generate_ground()`)
+compute the field of view of the scene--if rendering with rayrender, adding additional sphere (e.g. with `rayrender::generate_ground()`)
 will change this calculation. Use `rayrender::render_scene()` instead if this is a problem.
 }
 \examples{
@@ -62,11 +63,20 @@ get_example_molecule("penicillin") \%>\%
   generate_full_scene() \%>\%
   render_model(lights = "both", samples=400, width=800, height=800)
 
+#Render the scene with rayvertex and custom lights
+get_example_molecule("penicillin") \%>\%
+  read_sdf() \%>\%
+  generate_full_scene(pathtrace=FALSE) \%>\%
+  render_model(width=800, height=800,background="grey66",
+               lights = rayvertex::directional_light(c(0.2,1,1)))
+
 #Rotate the molecule 30 degrees around the y axis, and the 30 degrees around the z axis
 get_example_molecule("penicillin") \%>\%
   read_sdf() \%>\%
   generate_full_scene() \%>\%
   render_model(lights = "both", samples=400, width=800, height=800, angle=c(0,30,30))
+
+
 
 #Add a checkered plane underneath, using rayrender::add_object and rayrender::xz_rect().
 #We also pass a value to `clamp_value` to minimize fireflies (bright spots).
