@@ -48,20 +48,20 @@ will change this calculation. Use `rayrender::render_scene()` instead if this is
 get_example_molecule("caffeine") \%>\%
   read_sdf() \%>\%
   generate_full_scene() \%>\%
-  render_model()
+  render_model(samples=256,sample_method="sobol_blue")
 
 #Light the example from below as well
 get_example_molecule("caffeine") \%>\%
   read_sdf() \%>\%
   generate_full_scene() \%>\%
-  render_model(lights = "both")
+  render_model(lights = "both", samples=256,sample_method="sobol_blue")
 
 #Generate a scene with penicillin, increasing the number of samples and the width/height
 #for a higher quality render.
 get_example_molecule("penicillin") \%>\%
   read_sdf() \%>\%
   generate_full_scene() \%>\%
-  render_model(lights = "both", samples=400, width=800, height=800)
+  render_model(lights = "both", samples=256, width=800, height=800,sample_method="sobol_blue")
 
 #Render the scene with rayvertex and custom lights
 get_example_molecule("penicillin") \%>\%
@@ -74,7 +74,8 @@ get_example_molecule("penicillin") \%>\%
 get_example_molecule("penicillin") \%>\%
   read_sdf() \%>\%
   generate_full_scene() \%>\%
-  render_model(lights = "both", samples=400, width=800, height=800, angle=c(0,30,30))
+  render_model(lights = "both", samples=256, width=800, height=800,
+               angle=c(0,30,30),sample_method="sobol_blue")
 
 
 
@@ -86,6 +87,7 @@ get_example_molecule("skatole") \%>\%
   generate_full_scene() \%>\%
   add_object(xz_rect(xwidth=1000,zwidth=1000,y=-4,
                      material=diffuse(color="#330000",checkercolor="#770000"))) \%>\%
-  render_model(samples=400, width=800, height=800, clamp_value=10)
+  render_model(samples=256, width=800, height=800, clamp_value=10,
+               sample_method="sobol_blue")
 }
 }
