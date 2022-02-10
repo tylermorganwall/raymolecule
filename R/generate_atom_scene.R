@@ -9,6 +9,7 @@
 #' @param scale Default `1`. Amount to scale the inter-atom spacing.
 #' @param center Default `TRUE`. Centers the bounding box of the model.
 #' @param pathtrace Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.
+#' @param material Default `rayrender::glossy`. Rayrender material to use when `pathtrace = TRUE`. Must be either `glossy`, `diffuse`, or `dielectric`.
 #' @param material_vertex Default `rayvertex::material_list()`. Material to use when `pathtrace = FALSE`.
 #' `diffuse`/`ambient` colors and `ambient_intensity` are determined automatically, but all other material
 #' properties can be changed.
@@ -43,7 +44,12 @@
 #'}
 generate_atom_scene = function(model, x=0, y=0, z=0, scale = 1, center = TRUE,
                                pathtrace = TRUE,
+                               material = rayrender::glossy,
                                material_vertex = material_list(type="phong")) {
+  mat_info = material()
+  if(!mat_info$type %in% c("glossy","diffuse", "dielectric")) {
+    stop("material() must be either `glossy`, `diffuse`, or `dielectric`")
+  }
   atoms = model$atoms
   atoms$x = atoms$x * scale
   atoms$y = atoms$y * scale
@@ -69,7 +75,7 @@ generate_atom_scene = function(model, x=0, y=0, z=0, scale = 1, center = TRUE,
 
       scenelist[[counter]] = sphere(x=atoms$x[i],y=atoms$y[i],z=atoms$z[i],
                                     radius=atomsize/2,
-                                    material=glossy(color=atomcol))
+                                    material=material(color=atomcol))
       counter = counter + 1
     }
     return(do.call(rbind, scenelist))

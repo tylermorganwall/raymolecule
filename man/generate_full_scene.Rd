@@ -13,6 +13,7 @@ generate_full_scene(
   center = TRUE,
   pathtrace = TRUE,
   force_single_bonds = FALSE,
+  material = rayrender::glossy,
   material_vertex = material_list(type = "phong")
 )
 }
@@ -32,6 +33,8 @@ generate_full_scene(
 \item{pathtrace}{Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.}
 
 \item{force_single_bonds}{Default `FALSE`. Whether to force all bonds to show as a single connection.}
+
+\item{material}{Default `rayrender::glossy`. Rayrender material to use when `pathtrace = TRUE`. Must be either `glossy`, `diffuse`, or `dielectric`.}
 
 \item{material_vertex}{Default `rayvertex::material_list()`. Material to use when `pathtrace = FALSE`.
 `diffuse`/`ambient` colors and `ambient_intensity` are determined automatically, but all other material

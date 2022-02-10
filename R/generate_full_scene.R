@@ -10,6 +10,7 @@
 #' @param center Default `TRUE`. Centers the bounding box of the model.
 #' @param force_single_bonds Default `FALSE`. Whether to force all bonds to show as a single connection.
 #' @param pathtrace Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.
+#' @param material Default `rayrender::glossy`. Rayrender material to use when `pathtrace = TRUE`. Must be either `glossy`, `diffuse`, or `dielectric`.
 #' @param material_vertex Default `rayvertex::material_list()`. Material to use when `pathtrace = FALSE`.
 #' `diffuse`/`ambient` colors and `ambient_intensity` are determined automatically, but all other material
 #' properties can be changed.
@@ -58,8 +59,12 @@
 #'
 #'}
 generate_full_scene = function(model, x=0,y=0,z=0, scale = 1, center = TRUE, pathtrace = TRUE,
-                               force_single_bonds = FALSE,
+                               force_single_bonds = FALSE, material = rayrender::glossy,
                                material_vertex = material_list(type="phong")) {
+  mat_info = material()
+  if(!mat_info$type %in% c("glossy","diffuse", "dielectric")) {
+    stop("material() must be either `glossy`, `diffuse`, or `dielectric`")
+  }
   atoms = model$atoms
   atoms$x = atoms$x * scale
   atoms$y = atoms$y * scale
@@ -86,7 +91,7 @@ generate_full_scene = function(model, x=0,y=0,z=0, scale = 1, center = TRUE, pat
       atomsize = (PeriodicTable::mass(atoms$type[i])/14)^(1/3)
       scenelist[[counter]] = sphere(x=atoms$x[i],y=atoms$y[i],z=atoms$z[i],
                                     radius=atomsize/2,
-                                    material=glossy(color=atomcol))
+                                    material=material(color=atomcol))
       counter = counter + 1
     }
     bondlist = list()
@@ -99,7 +104,7 @@ generate_full_scene = function(model, x=0,y=0,z=0, scale = 1, center = TRUE, pat
           bondlist[[counter]] = segment(start = as.numeric(atoms[bond1,1:3]),
                                         end = as.numeric(atoms[bond2,1:3]),
                                         radius=1/10,
-                                        material=glossy(color="grey33"))
+                                        material=material(color="grey33"))
           counter = counter + 1
         }
 
@@ -110,13 +115,13 @@ generate_full_scene = function(model, x=0,y=0,z=0, scale = 1, center = TRUE, pat
           bondlist[[counter]] = segment(start = as.numeric(atoms[bond1,1:3])+onb[3,]/8,
                                         end = as.numeric(atoms[bond2,1:3])+onb[3,]/8,
                                         radius=1/10,
-                                        material=glossy(color="grey33"))
+                                        material=material(color="grey33"))
           counter = counter + 1
 
           bondlist[[counter]] = segment(start = as.numeric(atoms[bond1,1:3])-onb[3,]/8,
                                         end = as.numeric(atoms[bond2,1:3])-onb[3,]/8,
                                         radius=1/10,
-                                        material=glossy(color="grey33"))
+                                        material=material(color="grey33"))
           counter = counter + 1
         }
       } else if(bonds[i,3] == 3) {
@@ -126,18 +131,18 @@ generate_full_scene = function(model, x=0,y=0,z=0, scale = 1, center = TRUE, pat
           bondlist[[counter]] = segment(start = as.numeric(atoms[bond1,1:3])+onb[3,]/4,
                                         end = as.numeric(atoms[bond2,1:3])+onb[3,]/4,
                                         radius=1/10,
-                                        material=glossy(color="grey33"))
+                                        material=material(color="grey33"))
           counter = counter + 1
 
           bondlist[[counter]] = segment(start = as.numeric(atoms[bond1,1:3])-onb[3,]/4,
                                         end = as.numeric(atoms[bond2,1:3])-onb[3,]/4,
                                         radius=1/10,
-                                        material=glossy(color="grey33"))
+                                        material=material(color="grey33"))
           counter = counter + 1
           bondlist[[counter]] = segment(start = as.numeric(atoms[bond1,1:3]),
                                         end = as.numeric(atoms[bond2,1:3]),
                                         radius=1/10,
-                                        material=glossy(color="grey33"))
+                                        material=material(color="grey33"))
           counter = counter + 1
         }
       }

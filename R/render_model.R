@@ -101,7 +101,7 @@ render_model = function(scene, fov = NULL, angle = c(0,0,0), order_rotation = c(
   }
   if(pathtraced) {
     if(any(angle != 0)) {
-      scene = group_objects(scene, group_angle = angle, group_order_rotation = order_rotation)
+      scene = group_objects(scene, angle = angle, order_rotation = order_rotation)
     }
     if(lights != "none") {
       if (lights == "top") {

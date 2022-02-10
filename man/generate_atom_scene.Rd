@@ -12,6 +12,7 @@ generate_atom_scene(
   scale = 1,
   center = TRUE,
   pathtrace = TRUE,
+  material = rayrender::glossy,
   material_vertex = material_list(type = "phong")
 )
 }
@@ -29,6 +30,8 @@ generate_atom_scene(
 \item{center}{Default `TRUE`. Centers the bounding box of the model.}
 
 \item{pathtrace}{Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.}
+
+\item{material}{Default `rayrender::glossy`. Rayrender material to use when `pathtrace = TRUE`. Must be either `glossy`, `diffuse`, or `dielectric`.}
 
 \item{material_vertex}{Default `rayvertex::material_list()`. Material to use when `pathtrace = FALSE`.
 `diffuse`/`ambient` colors and `ambient_intensity` are determined automatically, but all other material

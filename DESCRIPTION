@@ -1,12 +1,12 @@
 Package: raymolecule
 Type: Package
 Title: Parse and Render Molecular Structures in 3D
-Version: 0.4.0
+Version: 0.5.0
 Date: 2021-06-25
 Authors@R: c(person("Tyler", "Morgan-Wall", email = "tylermw@gmail.com",
     role = c("aut", "cph", "cre"), comment = c(ORCID = "0000-0002-3131-3814")))
 Maintainer: Tyler Morgan-Wall <tylermw@gmail.com>
-Description: Parses 'SDF' (Structural Description Format) and 'PDB' (Protein Database) files to a 'rayrender' scene for 3D rendering.
+Description: Downloads and parses 'SDF' (Structural Description Format) and 'PDB' (Protein Database) files for 3D rendering.
 License: GPL-3
 Encoding: UTF-8
 Imports:
@@ -16,4 +16,4 @@ Imports:
     httr,
     rayvertex
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2

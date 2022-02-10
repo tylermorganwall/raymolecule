@@ -13,6 +13,7 @@ generate_bond_scene(
   center = TRUE,
   force_single_bonds = FALSE,
   pathtrace = TRUE,
+  material = rayrender::glossy,
   material_vertex = material_list(diffuse = "grey33", ambient = "grey33", type =
     "phong", ambient_intensity = 0.3)
 )
@@ -33,6 +34,8 @@ generate_bond_scene(
 \item{force_single_bonds}{Default `FALSE`. Whether to force all bonds to show as a single connection.}
 
 \item{pathtrace}{Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.}
+
+\item{material}{Default `rayrender::glossy`. Rayrender material to use when `pathtrace = TRUE`. Must be either `glossy`, `diffuse`, or `dielectric`.}
 
 \item{material_vertex}{Default `material_list(diffuse="grey33",ambient="grey33",type="phong", ambient_intensity=0.3)`.
 Material to use for the bonds when `pathtrace = FALSE`.}
