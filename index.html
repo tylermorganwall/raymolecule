@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="pkgdown.css" rel="stylesheet">
 <script src="pkgdown.js"></script><meta property="og:title" content="Parse and Render Molecular Structures in 3D">
-<meta property="og:description" content="Parses SDF (Structural Description Format) and PDB (Protein Database) files to a rayrender scene for 3D rendering.">
+<meta property="og:description" content="Downloads and parses SDF (Structural Description Format) and PDB (Protein Database) files for 3D rendering.">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">raymolecule</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.4.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.0</span>
       </span>
     </div>
 
@@ -55,7 +55,7 @@
   </a>
 </li>
 <li>
-  <a href="https://github.com/tylermorganwall/raymolecule">
+  <a href="https://github.com/tylermorganwall/raymolecule" class="external-link">
     <span class="fa fa-github fa-lg"></span>
      
     GitHub
@@ -73,24 +73,24 @@
 
       </header><div class="row">
   <div class="contents col-md-9">
-<div id="raymolecule" class="section level1">
-<div class="page-header"><h1 class="hasAnchor">
-<a href="#raymolecule" class="anchor" aria-hidden="true"></a>raymolecule</h1></div>
+<div class="section level1">
+<div class="page-header"><h1 id="raymolecule">raymolecule<a class="anchor" aria-label="anchor" href="#raymolecule"></a>
+</h1></div>
 <p><img src="reference/figures/caff.gif"></p>
 <!-- badges: start -->
 <!-- badges: end -->
 <p><code>raymolecule</code> is an R package to parse and render molecules in 3D. Rendering is powered by two packages: <a href="https://www.rayrender.net/" class="external-link">rayrender</a> package, a pathtracer for R, and <a href="https://www.rayvertex.com/" class="external-link">rayvertex</a>, a rasterizer for R. <code>raymolecule</code> currently supports and parses SDF (structure-data file) and PDB (Protein Data Bank) files and returns a <code>rayrender</code> scene, which we then pathtrace and visualize in R. This initial release of the package only supports visualizing atoms and bonds.</p>
-<div id="installation" class="section level2">
-<h2 class="hasAnchor">
-<a href="#installation" class="anchor" aria-hidden="true"></a>Installation</h2>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
 <p>You can install the released version of raymolecule from Github:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span>
 <span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"tylermorganwall/raymolecule"</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="examples" class="section level2">
-<h2 class="hasAnchor">
-<a href="#examples" class="anchor" aria-hidden="true"></a>Examples</h2>
+<div class="section level2">
+<h2 id="examples">Examples<a class="anchor" aria-label="anchor" href="#examples"></a>
+</h2>
 <p><code>raymolecule</code> includes several example SDF files for the following molecules: “benzene”, “buckyball”, “caffeine”, “capsaicin”, “cinnemaldehyde”, “geraniol”, “luciferin”, “morphine”, “penicillin”, “pfoa”, “skatole”, “tubocurarine_chloride”. You can get the file path to these example files using the <code><a href="reference/get_example_molecule.html">get_example_molecule()</a></code> function. We pass this path to the <code><a href="reference/read_sdf.html">read_sdf()</a></code> file to parse the file and extract the atom coordinates and bond information in a list. <code>raymolecule</code> also includes the ability to fetch molecules from PubChem using the <code><a href="reference/get_molecule.html">get_molecule()</a></code> function. The magrittr pipe is automatically imported in the package, so we will use it to pass the output of each function to the input of the next.</p>
 <p>Here’s the format of the data:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -236,16 +236,23 @@
     <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li><a href="https://www.r-project.org/Licenses/GPL-3">GPL-3</a></li>
+<li><a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a></li>
 </ul>
 </div>
 
+
+<div class="citation">
+<h2 data-toc-skip>Citation</h2>
+<ul class="list-unstyled">
+<li><a href="authors.html#citation">Citing raymolecule</a></li>
+</ul>
+</div>
 
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>
-<a href="https://www.tylermw.com">Tyler Morgan-Wall</a> <br><small class="roles"> Author, copyright holder, maintainer </small> <a href="https://orcid.org/0000-0002-3131-3814" target="orcid.widget" aria-label="ORCID"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a> </li>
+<a href="https://www.tylermw.com" class="external-link">Tyler Morgan-Wall</a> <br><small class="roles"> Author, copyright holder, maintainer </small> <a href="https://orcid.org/0000-0002-3131-3814" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a> </li>
 </ul>
 </div>
 
@@ -262,7 +269,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 1.6.1.9001.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.9000.</p>
 </div>
 
       </footer>

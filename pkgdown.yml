@@ -1,8 +1,8 @@
 pandoc: 2.7.3
-pkgdown: 1.6.1.9001
-pkgdown_sha: 51268b0d9cb0588d7a6404a2b8ef4ee19c435e89
+pkgdown: 2.0.2.9000
+pkgdown_sha: ae7363faac9040a473a54fb3d770decdfb8dfec1
 articles: {}
-last_built: 2021-06-26T15:07Z
+last_built: 2022-02-10T05:47Z
 urls:
   reference: https://www.raymolecule.com/reference
   article: https://www.raymolecule.com/articles
