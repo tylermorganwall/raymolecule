@@ -49,7 +49,7 @@ Reads an SDF file and extracts the 3D molecule model
 get_example_molecule("caffeine") \%>\%
   read_sdf() \%>\%
   generate_atom_scene() \%>\%
-  render_model()
+  render_model(samples=256,sample_method="sobol_blue")
 
 #Generate a rayvertex scene, using toon shading
 shiny_toon_material = rayvertex::material_list(type="toon_phong",
@@ -64,6 +64,6 @@ get_example_molecule("caffeine") \%>\%
 get_example_molecule("caffeine") \%>\%
   read_sdf() \%>\%
   generate_atom_scene(scale=0.5) \%>\%
-  render_model()
+  render_model(samples=256,sample_method="sobol_blue")
 }
 }
