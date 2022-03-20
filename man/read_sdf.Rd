@@ -17,9 +17,9 @@ Reads an SDF file and extracts the 3D molecule model
 }
 \examples{
 #This assumes a hypothetical SDF file in your working directory:
-\donttest{
-read_pdb("molecule.sdf") \%>\%
-  generate_full_scene() \%>\%
-  render_model()
+if(file.exists("molecule.sdf")) {
+  read_pdb("molecule.sdf") \%>\%
+    generate_full_scene() \%>\%
+    render_model()
 }
 }

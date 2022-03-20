@@ -9,10 +9,10 @@
 #'
 #' @examples
 #' #This assumes a hypothetical SDF file in your working directory:
-#' \donttest{
-#' read_pdb("molecule.sdf") %>%
-#'   generate_full_scene() %>%
-#'   render_model()
+#' if(file.exists("molecule.sdf")) {
+#'   read_pdb("molecule.sdf") %>%
+#'     generate_full_scene() %>%
+#'     render_model()
 #' }
 read_sdf = function(filename) {
   as.numeric = function(...) {

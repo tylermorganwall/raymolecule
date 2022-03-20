@@ -23,9 +23,9 @@ connections.
 }
 \examples{
 #This assumes a hypothetical PDB file in your working directory:
-\dontrun{
-read_pdb("3nir.pdb") \%>\%
-  generate_full_scene() \%>\%
-  render_model()
+if(file.exists("3nir.pdb")) {
+  read_pdb("3nir.pdb") \%>\%
+    generate_full_scene() \%>\%
+    render_model()
 }
 }
