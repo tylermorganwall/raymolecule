@@ -161,8 +161,8 @@ generate_full_scene = function(model, x=0,y=0,z=0, scale = 1, center = TRUE, pat
         atomcol = "grey5"
       }
       material_atom = material_vertex
-      material_atom$diffuse = atomcol
-      material_atom$ambient = atomcol
+      material_atom$diffuse = convert_color(atomcol)
+      material_atom$ambient = convert_color(atomcol)
       material_atom$ambient_intensity = 0.3
       atomsize = (PeriodicTable::mass(atoms$type[i])/14)^(1/3)
       scene = add_shape(scene, sphere_mesh(position = c(atoms$x[i],atoms$y[i], atoms$z[i]),
@@ -170,8 +170,8 @@ generate_full_scene = function(model, x=0,y=0,z=0, scale = 1, center = TRUE, pat
                                            material = material_atom))
     }
     material_bond = material_vertex
-    material_atom$diffuse = "grey33"
-    material_atom$ambient = "grey33"
+    material_atom$diffuse = convert_color("grey33")
+    material_atom$ambient = convert_color("grey33")
     material_atom$ambient_intensity = 0.3
     for (i in 1:nrow(bonds)) {
       bond1 = atoms$index == bonds[i, 1]

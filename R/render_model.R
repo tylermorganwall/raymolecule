@@ -92,9 +92,14 @@ render_model = function(scene, fov = NULL, angle = c(0,0,0), order_rotation = c(
     widest = max(c(abs(bbox_x),abs(bbox_y),abs(bbox_z)))
     offset_dist = widest + widest/5 + max_sphere_radii
   } else {
-    bbox_x = range(scene$vertices[,1],na.rm=TRUE)
-    bbox_y = range(scene$vertices[,2],na.rm=TRUE)
-    bbox_z = range(scene$vertices[,3],na.rm=TRUE)
+    bbox_x = c()
+    bbox_y = c()
+    bbox_z = c()
+    for(vert in seq_len(length(scene$vertices))) {
+      bbox_x = range(c(bbox_x, range(scene$vertices[[vert]][,1],na.rm=TRUE)))
+      bbox_y = range(c(bbox_y, range(scene$vertices[[vert]][,2],na.rm=TRUE)))
+      bbox_z = range(c(bbox_z, range(scene$vertices[[vert]][,3],na.rm=TRUE)))
+    }
     widest = max(c(abs(bbox_x),abs(bbox_y),abs(bbox_z)))
     max_sphere_radii = 0
   }
