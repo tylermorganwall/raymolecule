@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">raymolecule</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.1</span>
       </span>
     </div>
 
@@ -61,74 +61,93 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">generate_atom_scene</span><span class="op">(</span>
-  <span class="va">model</span>,
-  x <span class="op">=</span> <span class="fl">0</span>,
-  y <span class="op">=</span> <span class="fl">0</span>,
-  z <span class="op">=</span> <span class="fl">0</span>,
-  scale <span class="op">=</span> <span class="fl">1</span>,
-  center <span class="op">=</span> <span class="cn">TRUE</span>,
-  pathtrace <span class="op">=</span> <span class="cn">TRUE</span>,
-  material <span class="op">=</span> <span class="fu">rayrender</span><span class="fu">::</span><span class="va"><a href="https://www.rayrender.net/reference/glossy.html" class="external-link">glossy</a></span>,
-  material_vertex <span class="op">=</span> <span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"phong"</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">generate_atom_scene</span><span class="op">(</span></span>
+<span>  <span class="va">model</span>,</span>
+<span>  x <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  y <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  z <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  scale <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  center <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  pathtrace <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  material <span class="op">=</span> <span class="fu">rayrender</span><span class="fu">::</span><span class="va"><a href="https://www.rayrender.net/reference/glossy.html" class="external-link">glossy</a></span>,</span>
+<span>  material_vertex <span class="op">=</span> <span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"phong"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>model</dt>
 <dd><p>Model extracted from a PDB or SDF file.</p></dd>
+
+
 <dt>x</dt>
 <dd><p>Default `0`. X offset, applied after centering.</p></dd>
+
+
 <dt>y</dt>
 <dd><p>Default `0`. Y offset, applied after centering.</p></dd>
+
+
 <dt>z</dt>
 <dd><p>Default `0`. Z offset, applied after centering.</p></dd>
+
+
 <dt>scale</dt>
 <dd><p>Default `1`. Amount to scale the inter-atom spacing.</p></dd>
+
+
 <dt>center</dt>
 <dd><p>Default `TRUE`. Centers the bounding box of the model.</p></dd>
+
+
 <dt>pathtrace</dt>
 <dd><p>Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.</p></dd>
+
+
 <dt>material</dt>
 <dd><p>Default `rayrender::glossy`. Rayrender material to use when `pathtrace = TRUE`. Must be either `glossy`, `diffuse`, or `dielectric`.</p></dd>
+
+
 <dt>material_vertex</dt>
 <dd><p>Default `rayvertex::material_list()`. Material to use when `pathtrace = FALSE`.
 `diffuse`/`ambient` colors and `ambient_intensity` are determined automatically, but all other material
 properties can be changed.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>Rayrender/rayvertex scene containing only the atoms in a molecule/protein.</p>
+    
+
+<p>Rayrender/rayvertex scene containing only the atoms in a molecule/protein.</p>
     </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="co">#Generate a scene with caffeine molecule with just the atoms</span></span>
-<span class="r-in"><span class="co"># \donttest{</span></span>
-<span class="r-in"><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span>
-<span class="r-in">  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span>
-<span class="r-in">  <span class="fu">generate_atom_scene</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span>
-<span class="r-in">  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co">#Generate a scene with caffeine molecule with just the atoms</span></span></span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>  <span class="fu">generate_atom_scene</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="generate_atom_scene-1.png" alt="" width="700" height="433"></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Generate a rayvertex scene, using toon shading</span></span>
-<span class="r-in"><span class="va">shiny_toon_material</span> <span class="op">=</span> <span class="fu">rayvertex</span><span class="fu">::</span><span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span>type<span class="op">=</span><span class="st">"toon_phong"</span>,</span>
-<span class="r-in">                                               toon_levels<span class="op">=</span><span class="fl">3</span>,</span>
-<span class="r-in">                                               toon_outline_width<span class="op">=</span><span class="fl">0.1</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span>
-<span class="r-in">  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span>
-<span class="r-in">  <span class="fu">generate_atom_scene</span><span class="op">(</span>pathtrace<span class="op">=</span><span class="cn">FALSE</span>, material_vertex <span class="op">=</span> <span class="va">shiny_toon_material</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span>
-<span class="r-in">  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>background<span class="op">=</span><span class="st">"white"</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Generate a rayvertex scene, using toon shading</span></span></span>
+<span class="r-in"><span><span class="va">shiny_toon_material</span> <span class="op">=</span> <span class="fu">rayvertex</span><span class="fu">::</span><span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span>type<span class="op">=</span><span class="st">"toon_phong"</span>,</span></span>
+<span class="r-in"><span>                                               toon_levels<span class="op">=</span><span class="fl">3</span>,</span></span>
+<span class="r-in"><span>                                               toon_outline_width<span class="op">=</span><span class="fl">0.1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>  <span class="fu">generate_atom_scene</span><span class="op">(</span>pathtrace<span class="op">=</span><span class="cn">FALSE</span>, material_vertex <span class="op">=</span> <span class="va">shiny_toon_material</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>background<span class="op">=</span><span class="st">"white"</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in rasterize(obj, lightinfo, line_mat = line_info, nx = width, ny = height,     model_color = color, lookfrom = lookfrom, lookat = lookat,     fov = fov, typevals = typevals, has_shadow_map = shadow_map,     calc_ambient = ssao, tbn = tangent_space_normals, ambient_radius = ssao_radius,     shadow_map_bias = shadow_map_bias, numbercores = numbercores,     max_indices = max_indices, has_normals_vec = has_norms, has_tex_vec = has_tex,     has_texture, has_ambient_texture, has_normal_texture, has_specular_texture,     has_emissive_texture, block_size = block_size, use_default_material = use_default_material,     near_plane, far_plane, shadow_map_intensity, bounds, shadow_map_dims,     camera_up, alpha_line, line_offset, ortho_dimensions, is_dir_light,     antialias_lines, has_vertex_tex, has_vertex_normals, has_reflection_map,     environment_map, background_sharpness, has_refraction, environment_map_hdr,     has_environment_map, bg_color, verbose):</span> Not compatible with requested type: [type=character; target=double].</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Generate a scene with caffeine, reducing the inter-atom spacing</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>  <span class="fu">generate_atom_scene</span><span class="op">(</span>scale<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="generate_atom_scene-2.png" alt="" width="700" height="433"></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Generate a scene with caffeine, reducing the inter-atom spacing</span></span>
-<span class="r-in"><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span>
-<span class="r-in">  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span>
-<span class="r-in">  <span class="fu">generate_atom_scene</span><span class="op">(</span>scale<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span>
-<span class="r-in">  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span>
-<span class="r-plt img"><img src="generate_atom_scene-3.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span class="co"># }</span></span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -143,7 +162,7 @@ properties can be changed.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.9000.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>
