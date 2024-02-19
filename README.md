@@ -6,6 +6,8 @@
 <img src="man/figures/caff.gif" ></img>
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/tylermorganwall/raymolecule/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/tylermorganwall/raymolecule/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 `raymolecule` is an R package to parse and render molecules in 3D.
@@ -31,10 +33,10 @@ remotes::install_github("tylermorganwall/raymolecule")
 `raymolecule` includes several example SDF files for the following
 molecules: “benzene”, “buckyball”, “caffeine”, “capsaicin”,
 “cinnemaldehyde”, “geraniol”, “luciferin”, “morphine”, “penicillin”,
-“pfoa”, “skatole”, “tubocurarine\_chloride”. You can get the file path
-to these example files using the `get_example_molecule()` function. We
-pass this path to the `read_sdf()` file to parse the file and extract
-the atom coordinates and bond information in a list. `raymolecule` also
+“pfoa”, “skatole”, “tubocurarine_chloride”. You can get the file path to
+these example files using the `get_example_molecule()` function. We pass
+this path to the `read_sdf()` file to parse the file and extract the
+atom coordinates and bond information in a list. `raymolecule` also
 includes the ability to fetch molecules from PubChem using the
 `get_molecule()` function. The magrittr pipe is automatically imported
 in the package, so we will use it to pass the output of each function to
@@ -43,6 +45,7 @@ the input of the next.
 Here’s the format of the data:
 
 ``` r
+
 library(raymolecule)
 
 get_example_molecule("benzene")  |> 
@@ -85,6 +88,7 @@ ID (CID), in case you have a specific molecule with a long name or
 unique isoform:
 
 ``` r
+
 str(get_molecule("estradiol"))
 #> List of 2
 #>  $ atoms:'data.frame':   44 obs. of  5 variables:
@@ -124,32 +128,44 @@ molecule. For more rendering options, see `rayrender::render_scene()`
 and `rayvertex::rasterize_scene()`.
 
 ``` r
+
 #Specify a width, height, and number of samples for the image (more samples == less noise)
 get_example_molecule("caffeine") |>
   read_sdf() |> 
   generate_full_scene() |> 
   render_model(width=800,height=800,samples=1000, clamp_value=10)
+#> Warning in render_scene(scene = scene, fov = fov, lookfrom = c(0, 0, widest * :
+#> "sobol_blue" sample method only valid for `samples` than or equal to
+#> 256--switching to `sample_method = "sobol"`
 ```
 
 <img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
 
 ``` r
+
 #Light from both bottom and top
 get_example_molecule("cinnemaldehyde") |>
   read_sdf() |> 
   generate_full_scene() |> 
   render_model(lights="both",width=800,height=800,samples=1000,clamp_value=10)
+#> Warning in render_scene(scene = scene, fov = fov, lookfrom = c(0, 0, widest * :
+#> "sobol_blue" sample method only valid for `samples` than or equal to
+#> 256--switching to `sample_method = "sobol"`
 ```
 
 <img src="man/figures/README-unnamed-chunk-5-2.png" width="100%" />
 
 ``` r
+
 #Rotate the molecule and add a non-zero aperture setting to get depth of field effect
 get_example_molecule("penicillin") |>
   read_sdf() |> 
   generate_full_scene() |> 
   render_model(lights="both",width=800,height=800,samples=1000,angle=c(0,30,0),aperture=3,
                clamp_value=10)
+#> Warning in render_scene(scene = scene, fov = fov, lookfrom = c(0, 0, widest * :
+#> "sobol_blue" sample method only valid for `samples` than or equal to
+#> 256--switching to `sample_method = "sobol"`
 ```
 
 <img src="man/figures/README-unnamed-chunk-5-3.png" width="100%" />
@@ -158,6 +174,7 @@ We can use `rayvertex` to render images much more quickly and noise
 free, as well as include a toon cel-shading effect.
 
 ``` r
+
 library(rayvertex)
 
 #Render a basic example with rayvertex
@@ -170,6 +187,7 @@ get_example_molecule("tubocurarine_chloride") |>
 <img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />
 
 ``` r
+
 #Customize the material with toon shading
 shiny_toon_material = material_list(type="toon_phong",
                                     toon_levels=,
@@ -183,6 +201,7 @@ get_example_molecule("morphine") |>
 <img src="man/figures/README-unnamed-chunk-6-2.png" width="100%" />
 
 ``` r
+
 #Customize the lights with rayvertex
 get_example_molecule("skatole") |>
   read_sdf() |> 
@@ -202,6 +221,7 @@ function or rayvertex’s `add_shape()` function. If you use
 view yourself.
 
 ``` r
+
 library(rayrender)
 
 buckyball = get_example_molecule("buckyball") |>
@@ -213,17 +233,24 @@ buckyball |>
   add_object(sphere(y=12,radius=3,material=light(color="white", intensity=50))) |> 
   add_object(sphere(y=-12,radius=3,material=light(color="red", intensity=50))) |> 
   render_model(lights="none",width=800,height=800,samples=1000, clamp_value=10)
+#> Warning in render_scene(scene = scene, fov = fov, lookfrom = c(0, 0, widest * :
+#> "sobol_blue" sample method only valid for `samples` than or equal to
+#> 256--switching to `sample_method = "sobol"`
 ```
 
 <img src="man/figures/README-unnamed-chunk-7-1.png" width="100%" />
 
 ``` r
+
 #Generate ground underneath the model and use a light to cast a shadow
 generate_ground(depth=-4,material=diffuse(sigma=90)) |>
   add_object(buckyball) |>
   add_object(sphere(y=8,material=light(intensity=100))) |> 
   render_scene(width=800,height=800,samples=1000,aperture=1,fov=30,lookfrom = c(0,1,30),
                clamp_value = 10)
+#> Warning in render_scene(add_object(add_object(generate_ground(depth = -4, :
+#> "sobol_blue" sample method only valid for `samples` than or equal to
+#> 256--switching to `sample_method = "sobol"`
 ```
 
 <img src="man/figures/README-unnamed-chunk-7-2.png" width="100%" />

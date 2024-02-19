@@ -21,6 +21,7 @@ knitr::opts_chunk$set(
 <img src="man/figures/caff.gif" ></img>
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/tylermorganwall/raymolecule/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/tylermorganwall/raymolecule/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 `raymolecule` is an R package to parse and render molecules in 3D. Rendering is powered by two packages: [rayrender](https://www.rayrender.net/) package, a pathtracer for R, and [rayvertex](https://www.rayvertex.com/), a rasterizer for R. `raymolecule` currently supports and parses SDF (structure-data file) and PDB (Protein Data Bank) files and returns a `rayrender` scene, which we then pathtrace and visualize in R. This initial release of the package only supports visualizing atoms and bonds.
