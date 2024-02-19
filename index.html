@@ -78,7 +78,7 @@
 </h1></div>
 <p><img src="reference/figures/caff.gif"></p>
 <!-- badges: start -->
-<!-- badges: end -->
+
 <p><code>raymolecule</code> is an R package to parse and render molecules in 3D. Rendering is powered by two packages: <a href="https://www.rayrender.net/" class="external-link">rayrender</a> package, a pathtracer for R, and <a href="https://www.rayvertex.com/" class="external-link">rayvertex</a>, a rasterizer for R. <code>raymolecule</code> currently supports and parses SDF (structure-data file) and PDB (Protein Data Bank) files and returns a <code>rayrender</code> scene, which we then pathtrace and visualize in R. This initial release of the package only supports visualizing atoms and bonds.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -94,7 +94,8 @@
 <p><code>raymolecule</code> includes several example SDF files for the following molecules: “benzene”, “buckyball”, “caffeine”, “capsaicin”, “cinnemaldehyde”, “geraniol”, “luciferin”, “morphine”, “penicillin”, “pfoa”, “skatole”, “tubocurarine_chloride”. You can get the file path to these example files using the <code><a href="reference/get_example_molecule.html">get_example_molecule()</a></code> function. We pass this path to the <code><a href="reference/read_sdf.html">read_sdf()</a></code> file to parse the file and extract the atom coordinates and bond information in a list. <code>raymolecule</code> also includes the ability to fetch molecules from PubChem using the <code><a href="reference/get_molecule.html">get_molecule()</a></code> function. The magrittr pipe is automatically imported in the package, so we will use it to pass the output of each function to the input of the next.</p>
 <p>Here’s the format of the data:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.raymolecule.com/" class="external-link">raymolecule</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.raymolecule.com/" class="external-link">raymolecule</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"benzene"</span><span class="op">)</span>  <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -129,7 +130,8 @@
 <span><span class="co">#&gt; 12    6 12      1</span></span></code></pre></div>
 <p>Alternatively, you can fetch any molecule from <a href="https://pubchem.ncbi.nlm.nih.gov" class="external-link">PubChem</a> by passing either the molecule name. You can also fetch a molecule using the official compound ID (CID), in case you have a specific molecule with a long name or unique isoform:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="fu"><a href="reference/get_molecule.html">get_molecule</a></span><span class="op">(</span><span class="st">"estradiol"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="fu"><a href="reference/get_molecule.html">get_molecule</a></span><span class="op">(</span><span class="st">"estradiol"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 2</span></span>
 <span><span class="co">#&gt;  $ atoms:'data.frame':   44 obs. of  5 variables:</span></span>
 <span><span class="co">#&gt;   ..$ x    : num [1:44] 5.061 -5.857 2.664 1.984 0.515 ...</span></span>
@@ -156,30 +158,43 @@
 <span><span class="co">#&gt;   ..$ number: num [1:47] 1 1 1 1 1 1 1 1 1 1 ...</span></span></code></pre></div>
 <p>We can then pass the list from <code>get_example_molecule() |&gt; read_sdf()</code> or from <code><a href="reference/get_molecule.html">get_molecule()</a></code> to the <code><a href="reference/generate_full_scene.html">generate_full_scene()</a></code>, <code><a href="reference/generate_atom_scene.html">generate_atom_scene()</a></code>, or <code><a href="reference/generate_bond_scene.html">generate_bond_scene()</a></code> functions to convert this representation to a rayrender/rayvertex scene. This can then be passed on the <code><a href="reference/render_model.html">render_model()</a></code> function, which will call rayrender’s <code><a href="https://www.rayrender.net/reference/render_scene.html" class="external-link">render_scene()</a></code> or rayvertex’s <code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rasterize_scene()</a></code> functions to render it. This function automatically ensures the molecule is centered and in frame, and sets up lighting, and can accept arguments to rotate the molecule. For more rendering options, see <code><a href="https://www.rayrender.net/reference/render_scene.html" class="external-link">rayrender::render_scene()</a></code> and <code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rayvertex::rasterize_scene()</a></code>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Specify a width, height, and number of samples for the image (more samples == less noise)</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co">#Specify a width, height, and number of samples for the image (more samples == less noise)</span></span>
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>, clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>, clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in render_scene(scene = scene, fov = fov, lookfrom = c(0, 0, widest * :</span></span>
+<span><span class="co">#&gt; "sobol_blue" sample method only valid for `samples` than or equal to</span></span>
+<span><span class="co">#&gt; 256--switching to `sample_method = "sobol"`</span></span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-5-1.png" width="100%"></p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Light from both bottom and top</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co">#Light from both bottom and top</span></span>
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"cinnemaldehyde"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>lights<span class="op">=</span><span class="st">"both"</span>,width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>,clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>lights<span class="op">=</span><span class="st">"both"</span>,width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>,clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in render_scene(scene = scene, fov = fov, lookfrom = c(0, 0, widest * :</span></span>
+<span><span class="co">#&gt; "sobol_blue" sample method only valid for `samples` than or equal to</span></span>
+<span><span class="co">#&gt; 256--switching to `sample_method = "sobol"`</span></span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-5-2.png" width="100%"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Rotate the molecule and add a non-zero aperture setting to get depth of field effect</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co">#Rotate the molecule and add a non-zero aperture setting to get depth of field effect</span></span>
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"penicillin"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>lights<span class="op">=</span><span class="st">"both"</span>,width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>,angle<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">30</span>,<span class="fl">0</span><span class="op">)</span>,aperture<span class="op">=</span><span class="fl">3</span>,</span>
-<span>               clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<span>               clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in render_scene(scene = scene, fov = fov, lookfrom = c(0, 0, widest * :</span></span>
+<span><span class="co">#&gt; "sobol_blue" sample method only valid for `samples` than or equal to</span></span>
+<span><span class="co">#&gt; 256--switching to `sample_method = "sobol"`</span></span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-5-3.png" width="100%"></p>
 <p>We can use <code>rayvertex</code> to render images much more quickly and noise free, as well as include a toon cel-shading effect.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.rayvertex.com" class="external-link">rayvertex</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.rayvertex.com" class="external-link">rayvertex</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">#Render a basic example with rayvertex</span></span>
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"tubocurarine_chloride"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -188,7 +203,8 @@
 <span>  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,background<span class="op">=</span><span class="st">"grey66"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-6-1.png" width="100%"></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Customize the material with toon shading</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co">#Customize the material with toon shading</span></span>
 <span><span class="va">shiny_toon_material</span> <span class="op">=</span> <span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span>type<span class="op">=</span><span class="st">"toon_phong"</span>,</span>
 <span>                                    toon_levels<span class="op">=</span>,</span>
 <span>                                    toon_outline_width<span class="op">=</span><span class="fl">0.1</span><span class="op">)</span></span>
@@ -198,7 +214,8 @@
 <span>  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,background<span class="op">=</span><span class="st">"grey66"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-6-2.png" width="100%"></p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Customize the lights with rayvertex</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co">#Customize the lights with rayvertex</span></span>
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"skatole"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span>pathtrace<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
@@ -208,7 +225,8 @@
 <p><img src="reference/figures/README-unnamed-chunk-6-3.png" width="100%"></p>
 <p>You can turn off lighting in <code><a href="reference/render_model.html">render_model()</a></code> and customize the scene (adding different objects or lights) by using rayrender’s <code><a href="https://www.rayrender.net/reference/add_object.html" class="external-link">add_object()</a></code> function or rayvertex’s <code><a href="https://www.rayvertex.com/reference/add_shape.html" class="external-link">add_shape()</a></code> function. If you use <code><a href="https://www.rayrender.net/reference/render_scene.html" class="external-link">rayrender::render_scene()</a></code>/<code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rayvertex::rasterize_scene()</a></code> instead of <code><a href="reference/render_model.html">render_model()</a></code>, you have to set up the camera position and field of view yourself.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.rayrender.net" class="external-link">rayrender</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.rayrender.net" class="external-link">rayrender</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">buckyball</span> <span class="op">=</span> <span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"buckyball"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
@@ -218,15 +236,22 @@
 <span><span class="va">buckyball</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://www.rayrender.net/reference/add_object.html" class="external-link">add_object</a></span><span class="op">(</span><span class="fu"><a href="https://www.rayrender.net/reference/sphere.html" class="external-link">sphere</a></span><span class="op">(</span>y<span class="op">=</span><span class="fl">12</span>,radius<span class="op">=</span><span class="fl">3</span>,material<span class="op">=</span><span class="fu"><a href="https://www.rayrender.net/reference/light.html" class="external-link">light</a></span><span class="op">(</span>color<span class="op">=</span><span class="st">"white"</span>, intensity<span class="op">=</span><span class="fl">50</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://www.rayrender.net/reference/add_object.html" class="external-link">add_object</a></span><span class="op">(</span><span class="fu"><a href="https://www.rayrender.net/reference/sphere.html" class="external-link">sphere</a></span><span class="op">(</span>y<span class="op">=</span><span class="op">-</span><span class="fl">12</span>,radius<span class="op">=</span><span class="fl">3</span>,material<span class="op">=</span><span class="fu"><a href="https://www.rayrender.net/reference/light.html" class="external-link">light</a></span><span class="op">(</span>color<span class="op">=</span><span class="st">"red"</span>, intensity<span class="op">=</span><span class="fl">50</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>lights<span class="op">=</span><span class="st">"none"</span>,width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>, clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>lights<span class="op">=</span><span class="st">"none"</span>,width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>, clamp_value<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in render_scene(scene = scene, fov = fov, lookfrom = c(0, 0, widest * :</span></span>
+<span><span class="co">#&gt; "sobol_blue" sample method only valid for `samples` than or equal to</span></span>
+<span><span class="co">#&gt; 256--switching to `sample_method = "sobol"`</span></span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-7-1.png" width="100%"></p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Generate ground underneath the model and use a light to cast a shadow</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co">#Generate ground underneath the model and use a light to cast a shadow</span></span>
 <span><span class="fu"><a href="https://www.rayrender.net/reference/generate_ground.html" class="external-link">generate_ground</a></span><span class="op">(</span>depth<span class="op">=</span><span class="op">-</span><span class="fl">4</span>,material<span class="op">=</span><span class="fu"><a href="https://www.rayrender.net/reference/diffuse.html" class="external-link">diffuse</a></span><span class="op">(</span>sigma<span class="op">=</span><span class="fl">90</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://www.rayrender.net/reference/add_object.html" class="external-link">add_object</a></span><span class="op">(</span><span class="va">buckyball</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://www.rayrender.net/reference/add_object.html" class="external-link">add_object</a></span><span class="op">(</span><span class="fu"><a href="https://www.rayrender.net/reference/sphere.html" class="external-link">sphere</a></span><span class="op">(</span>y<span class="op">=</span><span class="fl">8</span>,material<span class="op">=</span><span class="fu"><a href="https://www.rayrender.net/reference/light.html" class="external-link">light</a></span><span class="op">(</span>intensity<span class="op">=</span><span class="fl">100</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://www.rayrender.net/reference/render_scene.html" class="external-link">render_scene</a></span><span class="op">(</span>width<span class="op">=</span><span class="fl">800</span>,height<span class="op">=</span><span class="fl">800</span>,samples<span class="op">=</span><span class="fl">1000</span>,aperture<span class="op">=</span><span class="fl">1</span>,fov<span class="op">=</span><span class="fl">30</span>,lookfrom <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">30</span><span class="op">)</span>,</span>
-<span>               clamp_value <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<span>               clamp_value <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in render_scene(add_object(add_object(generate_ground(depth = -4, :</span></span>
+<span><span class="co">#&gt; "sobol_blue" sample method only valid for `samples` than or equal to</span></span>
+<span><span class="co">#&gt; 256--switching to `sample_method = "sobol"`</span></span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-7-2.png" width="100%"></p>
 </div>
 </div>
@@ -265,7 +290,12 @@
 </ul>
 </div>
 
-
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
+<ul class="list-unstyled">
+<li><a href="https://github.com/tylermorganwall/raymolecule/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/tylermorganwall/raymolecule/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+</ul>
+</div>
 
   </div>
 </div>
