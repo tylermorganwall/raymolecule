@@ -134,14 +134,14 @@ properties can be changed.</p></dd>
 <span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu">generate_full_scene</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in mat_info$type:</span> $ operator is invalid for atomic vectors</span>
+<span class="r-plt img"><img src="generate_full_scene-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Generate a rayvertex scene with a custom material</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu">generate_full_scene</span><span class="op">(</span>pathtrace<span class="op">=</span><span class="cn">FALSE</span>, material_vertex<span class="op">=</span><span class="fu">rayvertex</span><span class="fu">::</span><span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span>type<span class="op">=</span><span class="st">"phong"</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>background<span class="op">=</span><span class="st">"grey33"</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in mat_info$type:</span> $ operator is invalid for atomic vectors</span>
+<span class="r-plt img"><img src="generate_full_scene-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Generate a rayvertex scene, using toon shading</span></span></span>
 <span class="r-in"><span><span class="va">shiny_toon_material</span> <span class="op">=</span> <span class="fu">rayvertex</span><span class="fu">::</span><span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span>type<span class="op">=</span><span class="st">"toon_phong"</span>,</span></span>
@@ -151,14 +151,14 @@ properties can be changed.</p></dd>
 <span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu">generate_full_scene</span><span class="op">(</span>pathtrace<span class="op">=</span><span class="cn">FALSE</span>, material_vertex<span class="op">=</span><span class="va">shiny_toon_material</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>background<span class="op">=</span><span class="st">"grey66"</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in mat_info$type:</span> $ operator is invalid for atomic vectors</span>
+<span class="r-plt img"><img src="generate_full_scene-3.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Generate a scene with morphine, increasing the inter-atom spacing</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"tubocurarine_chloride"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu">generate_full_scene</span><span class="op">(</span>scale<span class="op">=</span><span class="fl">1.5</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in mat_info$type:</span> $ operator is invalid for atomic vectors</span>
+<span class="r-plt img"><img src="generate_full_scene-4.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Force bonds to appear as a single link (to focus purely on the shape of the molecule)</span></span></span>
@@ -166,7 +166,7 @@ properties can be changed.</p></dd>
 <span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu">generate_full_scene</span><span class="op">(</span>force_single_bonds <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in mat_info$type:</span> $ operator is invalid for atomic vectors</span>
+<span class="r-plt img"><img src="generate_full_scene-5.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
