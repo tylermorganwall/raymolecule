@@ -20,3 +20,5 @@ RoxygenNote: 7.3.0
 URL: http://www.raymolecule.com/,
      https://github.com/tylermorganwall/raymolecule
 BugReports: https://github.com/tylermorganwall/raymolecule/issues
+Remotes: tylermorganwall/rayrender,
+    tylermorganwall/rayvertex
