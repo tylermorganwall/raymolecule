@@ -6,9 +6,6 @@
 \usage{
 onb_from_w(n)
 }
-\arguments{
-\item{v}{Numeric vector.}
-}
 \description{
 Create Orthonormal Basis from w (z)
 }

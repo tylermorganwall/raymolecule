@@ -77,12 +77,14 @@ render_model = function(scene, fov = NULL, angle = c(0,0,0), order_rotation = c(
   }
   pathtraced = suppressWarnings(is.null(scene$vertices))
   if(pathtraced) {
-    scene_model = scene[is.na(scene$lightintensity) &
+    is_not_light = unlist(lapply(scene$material, \(x) x$type)) != "light"
+
+    scene_model = scene[is_not_light &
                         (scene$shape == "cylinder" | scene$shape == "sphere"),]
     bbox_x = range(scene_model$x,na.rm=TRUE)
     bbox_y = range(scene_model$y,na.rm=TRUE)
     bbox_z = range(scene_model$z,na.rm=TRUE)
-    spheresizes = scene[(scene$shape == "sphere" & scene$type != "light"),4]
+    spheresizes = unlist(lapply(scene$shape_info, \(x) x[[1]]$radius))[is_not_light]
     if(length(spheresizes) > 0) {
       max_sphere_radii = max(spheresizes,na.rm=TRUE)
     } else {

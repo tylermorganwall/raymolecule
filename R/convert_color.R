@@ -10,7 +10,7 @@
 #' #none
 convert_color = function(color, as_hex = FALSE) {
   if(inherits(color,"character")) {
-    color = as.vector(col2rgb(color))/255
+    color = as.vector(grDevices::col2rgb(color))/255
   }
   stopifnot(all(color <= 1))
   stopifnot(all(color >= 0))

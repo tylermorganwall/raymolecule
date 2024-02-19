@@ -19,7 +19,6 @@ unit_vector = function(v) {
 
 #'@title Create Orthonormal Basis from w (z)
 #'
-#'@param v Numeric vector.
 #'@keywords internal
 onb_from_w = function(n) {
   a1 = unit_vector(n)

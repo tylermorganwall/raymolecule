@@ -47,6 +47,7 @@ generate_atom_scene = function(model, x=0, y=0, z=0, scale = 1, center = TRUE,
                                material = rayrender::glossy,
                                material_vertex = material_list(type="phong")) {
   mat_info = material()
+  mat_info = mat_info[[1]]
   if(!mat_info$type %in% c("glossy","diffuse", "dielectric")) {
     stop("material() must be either `glossy`, `diffuse`, or `dielectric`")
   }
@@ -78,7 +79,7 @@ generate_atom_scene = function(model, x=0, y=0, z=0, scale = 1, center = TRUE,
                                     material=material(color=atomcol))
       counter = counter + 1
     }
-    return(do.call(rbind, scenelist))
+    return(do.call("rbind", scenelist))
   } else {
     scene = list()
     for (i in 1:nrow(atoms)) {
@@ -89,8 +90,8 @@ generate_atom_scene = function(model, x=0, y=0, z=0, scale = 1, center = TRUE,
         atomcol = "grey5"
       }
       material_atom = material_vertex
-      material_atom$diffuse = atomcol
-      material_atom$ambient = atomcol
+      material_atom$diffuse = as.numeric(grDevices::col2rgb(atomcol))/255
+      material_atom$ambient = as.numeric(grDevices::col2rgb(atomcol))/255
       material_atom$ambient_intensity = 0.3
       atomsize = (PeriodicTable::mass(atoms$type[i])/14)^(1/3)
       scene = add_shape(scene, sphere_mesh(position = c(atoms$x[i],atoms$y[i], atoms$z[i]),

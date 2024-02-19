@@ -47,6 +47,7 @@ generate_bond_scene = function(model, x=0, y=0, z=0, scale = 1, center = TRUE,
                                                                type = "phong",
                                                                ambient_intensity=0.3)) {
   mat_info = material()
+  mat_info = mat_info[[1]]
   if(!mat_info$type %in% c("glossy","diffuse", "dielectric")) {
     stop("material() must be either `glossy`, `diffuse`, or `dielectric`")
   }

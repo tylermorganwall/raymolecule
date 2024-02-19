@@ -14,8 +14,8 @@ generate_bond_scene(
   force_single_bonds = FALSE,
   pathtrace = TRUE,
   material = rayrender::glossy,
-  material_vertex = material_list(diffuse = "grey33", ambient = "grey33", type =
-    "phong", ambient_intensity = 0.3)
+  material_vertex = material_list(diffuse = "grey33", ambient = "grey33", type = "phong",
+    ambient_intensity = 0.3)
 )
 }
 \arguments{
