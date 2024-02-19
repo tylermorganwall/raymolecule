@@ -16,28 +16,33 @@ List giving the atom locations and the connections between atoms.
 Loads the structure of a molecule by fetching an SDF file from Pubchem, which can be piped to generate_full_scene
 }
 \examples{
-\donttest{
+if(run_documentation()) {
 get_molecule("caffeine") \%>\%
   generate_full_scene() \%>\%
   render_model()
-
+}
+if(run_documentation()) {
 #estradiol (aka estrogen)
 get_molecule(5757) \%>\%
   generate_full_scene() \%>\%
   render_model()
-
+}
+if(run_documentation()) {
 get_molecule("testosterone") \%>\%
   generate_full_scene() \%>\%
   render_model()
-
+}
+if(run_documentation()) {
 get_molecule("aspirin") \%>\%
   generate_full_scene() \%>\%
   render_model()
-
+}
+if(run_documentation()) {
 get_molecule("rutoside") \%>\%
   generate_full_scene() \%>\%
   render_model()
-
+}
+if(run_documentation()) {
 #If the 3D SDF doesn't exist, this function will pull the 2D SDF and inform the user
 get_molecule("cyanocobalamin") \%>\%
   generate_full_scene() \%>\%

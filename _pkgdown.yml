@@ -21,6 +21,10 @@ reference:
     desc: "Function to get included example data."
     contents:
       - starts_with("get")
+  - title: "pkgdown utils"
+    desc: "Internal but must be exported to meet CRAN guidelines"
+    contents:
+      - starts_with("run")
 
 navbar:
   title: "raymolecule"
