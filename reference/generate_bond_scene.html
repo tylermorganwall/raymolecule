@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">raymolecule</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
       </span>
     </div>
 
@@ -52,7 +52,7 @@
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Build Scene (bonds only)</h1>
-    
+    <small class="dont-index">Source: <a href="https://github.com/tylermorganwall/raymolecule/blob/HEAD/R/generate_bond_scene.R" class="external-link"><code>R/generate_bond_scene.R</code></a></small>
     <div class="hidden name"><code>generate_bond_scene.Rd</code></div>
     </div>
 
@@ -71,8 +71,8 @@
 <span>  force_single_bonds <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  pathtrace <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  material <span class="op">=</span> <span class="fu">rayrender</span><span class="fu">::</span><span class="va"><a href="https://www.rayrender.net/reference/glossy.html" class="external-link">glossy</a></span>,</span>
-<span>  material_vertex <span class="op">=</span> <span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span>diffuse <span class="op">=</span> <span class="st">"grey33"</span>, ambient <span class="op">=</span> <span class="st">"grey33"</span>, type <span class="op">=</span></span>
-<span>    <span class="st">"phong"</span>, ambient_intensity <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span>
+<span>  material_vertex <span class="op">=</span> <span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span>diffuse <span class="op">=</span> <span class="st">"grey33"</span>, ambient <span class="op">=</span> <span class="st">"grey33"</span>, type <span class="op">=</span> <span class="st">"phong"</span>,</span>
+<span>    ambient_intensity <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -134,21 +134,21 @@ Material to use for the bonds when `pathtrace = FALSE`.</p></dd>
 <span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu">generate_bond_scene</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>lights <span class="op">=</span> <span class="st">"both"</span>, samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="generate_bond_scene-1.png" alt="" width="700" height="433"></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in mat_info$type:</span> $ operator is invalid for atomic vectors</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Force single bonds to just show the shape of the molecule</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"benzene"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu">generate_bond_scene</span><span class="op">(</span>force_single_bonds <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>lights <span class="op">=</span> <span class="st">"both"</span>, samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="generate_bond_scene-2.png" alt="" width="700" height="433"></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in mat_info$type:</span> $ operator is invalid for atomic vectors</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Generate a scene with PFOA, reducing the inter-atom spacing</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"pfoa"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu">generate_bond_scene</span><span class="op">(</span>scale<span class="op">=</span><span class="fl">0.3</span>,force_single_bonds <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>lights <span class="op">=</span> <span class="st">"both"</span>, samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="generate_bond_scene-3.png" alt="" width="700" height="433"></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in mat_info$type:</span> $ operator is invalid for atomic vectors</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
@@ -164,7 +164,7 @@ Material to use for the bonds when `pathtrace = FALSE`.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>
