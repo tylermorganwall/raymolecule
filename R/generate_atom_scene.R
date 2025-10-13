@@ -48,7 +48,7 @@ generate_atom_scene = function(model, x=0, y=0, z=0, scale = 1, center = TRUE,
                                material_vertex = material_list(type="phong")) {
   mat_info = material()
   mat_info = mat_info[[1]]
-  if(!mat_info$type %in% c("glossy","diffuse", "dielectric")) {
+  if(!mat_info$type %in% c(7L, 1L, 3L)) {
     stop("material() must be either `glossy`, `diffuse`, or `dielectric`")
   }
   atoms = model$atoms

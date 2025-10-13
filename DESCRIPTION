@@ -1,8 +1,8 @@
 Package: raymolecule
 Type: Package
 Title: Parse and Render Molecular Structures in 3D
-Version: 0.5.3
-Date: 2024-2-18
+Version: 0.5.4
+Date: 2025-10-12
 Authors@R: c(person("Tyler", "Morgan-Wall", email = "tylermw@gmail.com",
     role = c("aut", "cph", "cre"), comment = c(ORCID = "0000-0002-3131-3814")))
 Maintainer: Tyler Morgan-Wall <tylermw@gmail.com>
