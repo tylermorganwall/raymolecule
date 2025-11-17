@@ -25,35 +25,35 @@
 #' @examples
 #' # Generate a scene with caffeine molecule with just the atoms
 #'\donttest{
-#' get_example_molecule("caffeine") %>%
-#'   read_sdf() %>%
-#'   generate_full_scene() %>%
+#' get_example_molecule("caffeine") |>
+#'   read_sdf() |>
+#'   generate_full_scene() |>
 #'   render_model(samples=256,sample_method="sobol_blue")
 #'
 #' #Light the example from below as well
-#' get_example_molecule("caffeine") %>%
-#'   read_sdf() %>%
-#'   generate_full_scene() %>%
+#' get_example_molecule("caffeine") |>
+#'   read_sdf() |>
+#'   generate_full_scene() |>
 #'   render_model(lights = "both", samples=256,sample_method="sobol_blue")
 #'
 #' #Generate a scene with penicillin, increasing the number of samples and the width/height
 #' #for a higher quality render.
-#' get_example_molecule("penicillin") %>%
-#'   read_sdf() %>%
-#'   generate_full_scene() %>%
+#' get_example_molecule("penicillin") |>
+#'   read_sdf() |>
+#'   generate_full_scene() |>
 #'   render_model(lights = "both", samples=256, width=800, height=800,sample_method="sobol_blue")
 #'
 #' #Render the scene with rayvertex and custom lights
-#' get_example_molecule("penicillin") %>%
-#'   read_sdf() %>%
-#'   generate_full_scene(pathtrace=FALSE) %>%
+#' get_example_molecule("penicillin") |>
+#'   read_sdf() |>
+#'   generate_full_scene(pathtrace=FALSE) |>
 #'   render_model(width=800, height=800,background="grey66",
 #'                lights = rayvertex::directional_light(c(0.2,1,1)))
 #'
 #' #Rotate the molecule 30 degrees around the y axis, and the 30 degrees around the z axis
-#' get_example_molecule("penicillin") %>%
-#'   read_sdf() %>%
-#'   generate_full_scene() %>%
+#' get_example_molecule("penicillin") |>
+#'   read_sdf() |>
+#'   generate_full_scene() |>
 #'   render_model(lights = "both", samples=256, width=800, height=800,
 #'                angle=c(0,30,30),sample_method="sobol_blue")
 #'
@@ -62,97 +62,153 @@
 #' #Add a checkered plane underneath, using rayrender::add_object and rayrender::xz_rect().
 #' #We also pass a value to `clamp_value` to minimize fireflies (bright spots).
 #' library(rayrender)
-#' get_example_molecule("skatole") %>%
-#'   read_sdf() %>%
-#'   generate_full_scene() %>%
+#' get_example_molecule("skatole") |>
+#'   read_sdf() |>
+#'   generate_full_scene() |>
 #'   add_object(xz_rect(xwidth=1000,zwidth=1000,y=-4,
-#'                      material=diffuse(color="#330000",checkercolor="#770000"))) %>%
+#'                      material=diffuse(color="#330000",checkercolor="#770000"))) |>
 #'   render_model(samples=256, width=800, height=800, clamp_value=10,
 #'                sample_method="sobol_blue")
 #'}
-render_model = function(scene, fov = NULL, angle = c(0,0,0), order_rotation = c(1,2,3),
-                        lights = "top", lightintensity = 80, ...) {
-  if(length(angle) == 1) {
-    angle = c(0,angle,0)
-  }
-  pathtraced = suppressWarnings(is.null(scene$vertices))
-  if(pathtraced) {
-    is_not_light = unlist(lapply(scene$material, \(x) x$type)) != "light"
+render_model = function(
+	scene,
+	fov = NULL,
+	angle = c(0, 0, 0),
+	order_rotation = c(1, 2, 3),
+	lights = "top",
+	lightintensity = 80,
+	...
+) {
+	if (length(angle) == 1) {
+		angle = c(0, angle, 0)
+	}
+	pathtraced = suppressWarnings(is.null(scene$vertices))
+	if (pathtraced) {
+		is_not_light = unlist(lapply(scene$material, \(x) x$type)) != "light"
 
-    scene_model = scene[is_not_light &
-                        (scene$shape == "cylinder" | scene$shape == "sphere"),]
-    bbox_x = range(scene_model$x,na.rm=TRUE)
-    bbox_y = range(scene_model$y,na.rm=TRUE)
-    bbox_z = range(scene_model$z,na.rm=TRUE)
-    spheresizes = unlist(lapply(scene$shape_info, \(x) x[[1]]$radius))[is_not_light]
-    if(length(spheresizes) > 0) {
-      max_sphere_radii = max(spheresizes,na.rm=TRUE)
-    } else {
-      max_sphere_radii = 0.5
-    }
+		scene_model = scene[
+			is_not_light &
+				(scene$shape == "cylinder" | scene$shape == "sphere"),
+		]
+		bbox_x = range(scene_model$x, na.rm = TRUE)
+		bbox_y = range(scene_model$y, na.rm = TRUE)
+		bbox_z = range(scene_model$z, na.rm = TRUE)
+		spheresizes = unlist(lapply(scene$shape_info, \(x) x[[1]]$radius))[
+			is_not_light
+		]
+		if (length(spheresizes) > 0) {
+			max_sphere_radii = max(spheresizes, na.rm = TRUE)
+		} else {
+			max_sphere_radii = 0.5
+		}
 
-    widest = max(c(abs(bbox_x),abs(bbox_y),abs(bbox_z)))
-    offset_dist = widest + widest/5 + max_sphere_radii
-  } else {
-    bbox_x = c()
-    bbox_y = c()
-    bbox_z = c()
-    for(vert in seq_len(length(scene$vertices))) {
-      bbox_x = range(c(bbox_x, range(scene$vertices[[vert]][,1],na.rm=TRUE)))
-      bbox_y = range(c(bbox_y, range(scene$vertices[[vert]][,2],na.rm=TRUE)))
-      bbox_z = range(c(bbox_z, range(scene$vertices[[vert]][,3],na.rm=TRUE)))
-    }
-    widest = max(c(abs(bbox_x),abs(bbox_y),abs(bbox_z)))
-    max_sphere_radii = 0
-  }
-  if(is.null(fov)) {
-    fov = atan2(widest+widest/5 + max_sphere_radii, widest*5)/pi*180*2
-  }
-  if(pathtraced) {
-    if(any(angle != 0)) {
-      scene = group_objects(scene, angle = angle, order_rotation = order_rotation)
-    }
-    if(lights != "none") {
-      if (lights == "top") {
-        light = sphere(x=offset_dist*2,y=offset_dist*2,z=offset_dist*2,
-                          radius = widest/2,
-                          material = light(intensity=lightintensity)) %>%
-          add_object(sphere(x=-offset_dist*2,y=offset_dist*2,z=-offset_dist*2,
-                            radius = widest/2,
-                            material = light(intensity=lightintensity)))
-      } else {
-        light = (sphere(x=offset_dist*2,y=offset_dist*2,z=offset_dist*2,
-                        radius = widest/2,
-                        material = light(intensity=lightintensity))) %>%
-          add_object(sphere(x=-offset_dist*2,y=offset_dist*2,z=-offset_dist*2,
-                            radius = widest/2,
-                            material = light(intensity=lightintensity))) %>%
-          add_object(sphere(y=-offset_dist*4,
-                            radius=widest/2,
-                            material = light(intensity=lightintensity)))
-      }
-      scene = scene %>%
-        add_object(light)
-
-    }
-    render_scene(scene = scene,
-                 fov = fov, lookfrom = c(0,0,widest*5), ...)
-  } else {
-    if(is.character(lights)) {
-      if(lights != "none") {
-        if (lights == "top") {
-          light = add_light(directional_light(c(1,1,1)), directional_light(c(1,1,-1)))
-        } else {
-          light = add_light(directional_light(c(1,1,1)), add_light(directional_light(c(-1,1,-1)),
-            directional_light(c(0,-1,0))))
-        }
-      }
-    } else if(is.matrix(lights)) {
-      light = lights
-    }
-    scene = rotate_mesh(scene, angle=angle,order_rotation=order_rotation)
-    rasterize_scene(scene = scene, lookat=c(0,0,0),
-                    light_info = light,
-                    fov = fov, lookfrom = c(0,0,widest*5), ...)
-  }
+		widest = max(c(abs(bbox_x), abs(bbox_y), abs(bbox_z)))
+		offset_dist = widest + widest / 5 + max_sphere_radii
+	} else {
+		bbox_x = c()
+		bbox_y = c()
+		bbox_z = c()
+		for (vert in seq_len(length(scene$vertices))) {
+			bbox_x = range(c(
+				bbox_x,
+				range(scene$vertices[[vert]][, 1], na.rm = TRUE)
+			))
+			bbox_y = range(c(
+				bbox_y,
+				range(scene$vertices[[vert]][, 2], na.rm = TRUE)
+			))
+			bbox_z = range(c(
+				bbox_z,
+				range(scene$vertices[[vert]][, 3], na.rm = TRUE)
+			))
+		}
+		widest = max(c(abs(bbox_x), abs(bbox_y), abs(bbox_z)))
+		max_sphere_radii = 0
+	}
+	if (is.null(fov)) {
+		fov = atan2(widest + widest / 5 + max_sphere_radii, widest * 5) /
+			pi *
+			180 *
+			2
+	}
+	if (pathtraced) {
+		if (any(angle != 0)) {
+			scene = group_objects(
+				scene,
+				angle = angle,
+				order_rotation = order_rotation
+			)
+		}
+		if (lights != "none") {
+			if (lights == "top") {
+				light = sphere(
+					x = offset_dist * 2,
+					y = offset_dist * 2,
+					z = offset_dist * 2,
+					radius = widest / 2,
+					material = light(intensity = lightintensity)
+				) |>
+					add_object(sphere(
+						x = -offset_dist * 2,
+						y = offset_dist * 2,
+						z = -offset_dist * 2,
+						radius = widest / 2,
+						material = light(intensity = lightintensity)
+					))
+			} else {
+				light = (sphere(
+					x = offset_dist * 2,
+					y = offset_dist * 2,
+					z = offset_dist * 2,
+					radius = widest / 2,
+					material = light(intensity = lightintensity)
+				)) |>
+					add_object(sphere(
+						x = -offset_dist * 2,
+						y = offset_dist * 2,
+						z = -offset_dist * 2,
+						radius = widest / 2,
+						material = light(intensity = lightintensity)
+					)) |>
+					add_object(sphere(
+						y = -offset_dist * 4,
+						radius = widest / 2,
+						material = light(intensity = lightintensity)
+					))
+			}
+			scene = scene |>
+				add_object(light)
+		}
+		render_scene(scene = scene, fov = fov, lookfrom = c(0, 0, widest * 5), ...)
+	} else {
+		if (is.character(lights)) {
+			if (lights != "none") {
+				if (lights == "top") {
+					light = add_light(
+						directional_light(c(1, 1, 1)),
+						directional_light(c(1, 1, -1))
+					)
+				} else {
+					light = add_light(
+						directional_light(c(1, 1, 1)),
+						add_light(
+							directional_light(c(-1, 1, -1)),
+							directional_light(c(0, -1, 0))
+						)
+					)
+				}
+			}
+		} else if (is.matrix(lights)) {
+			light = lights
+		}
+		scene = rotate_mesh(scene, angle = angle, order_rotation = order_rotation)
+		rasterize_scene(
+			scene = scene,
+			lookat = c(0, 0, 0),
+			light_info = light,
+			fov = fov,
+			lookfrom = c(0, 0, widest * 5),
+			...
+		)
+	}
 }

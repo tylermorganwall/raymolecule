@@ -46,24 +46,24 @@ Reads an SDF file and extracts the 3D molecule model
 \examples{
 #Generate a scene with caffeine molecule with just the atoms
 \donttest{
-get_example_molecule("caffeine") \%>\%
-  read_sdf() \%>\%
-  generate_atom_scene() \%>\%
+get_example_molecule("caffeine") |>
+  read_sdf() |>
+  generate_atom_scene() |>
   render_model(samples=256,sample_method="sobol_blue")
 
 #Generate a rayvertex scene, using toon shading
 shiny_toon_material = rayvertex::material_list(type="toon_phong",
                                                toon_levels=3,
                                                toon_outline_width=0.1)
-get_example_molecule("caffeine") \%>\%
-  read_sdf() \%>\%
-  generate_atom_scene(pathtrace=FALSE, material_vertex = shiny_toon_material) \%>\%
+get_example_molecule("caffeine") |>
+  read_sdf() |>
+  generate_atom_scene(pathtrace=FALSE, material_vertex = shiny_toon_material) |>
   render_model(background="white")
 
 #Generate a scene with caffeine, reducing the inter-atom spacing
-get_example_molecule("caffeine") \%>\%
-  read_sdf() \%>\%
-  generate_atom_scene(scale=0.5) \%>\%
+get_example_molecule("caffeine") |>
+  read_sdf() |>
+  generate_atom_scene(scale=0.5) |>
   render_model(samples=256,sample_method="sobol_blue")
 }
 }

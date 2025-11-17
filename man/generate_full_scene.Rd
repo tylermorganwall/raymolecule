@@ -49,37 +49,37 @@ Reads an SDF file and extracts the 3D molecule model
 \examples{
 # Generate a scene with caffeine molecule
 \donttest{
-get_example_molecule("caffeine") \%>\%
-  read_sdf() \%>\%
-  generate_full_scene() \%>\%
+get_example_molecule("caffeine") |>
+  read_sdf() |>
+  generate_full_scene() |>
   render_model(samples=256,sample_method="sobol_blue")
 
 #Generate a rayvertex scene with a custom material
-get_example_molecule("caffeine") \%>\%
-  read_sdf() \%>\%
-  generate_full_scene(pathtrace=FALSE, material_vertex=rayvertex::material_list(type="phong")) \%>\%
+get_example_molecule("caffeine") |>
+  read_sdf() |>
+  generate_full_scene(pathtrace=FALSE, material_vertex=rayvertex::material_list(type="phong")) |>
   render_model(background="grey33")
 
 #Generate a rayvertex scene, using toon shading
 shiny_toon_material = rayvertex::material_list(type="toon_phong",
                                                toon_levels=3,
                                                toon_outline_width=0.1)
-get_example_molecule("caffeine") \%>\%
-  read_sdf() \%>\%
-  generate_full_scene(pathtrace=FALSE, material_vertex=shiny_toon_material) \%>\%
+get_example_molecule("caffeine") |>
+  read_sdf() |>
+  generate_full_scene(pathtrace=FALSE, material_vertex=shiny_toon_material) |>
   render_model(background="grey66")
 
 # Generate a scene with morphine, increasing the inter-atom spacing
-get_example_molecule("tubocurarine_chloride") \%>\%
-  read_sdf() \%>\%
-  generate_full_scene(scale=1.5) \%>\%
+get_example_molecule("tubocurarine_chloride") |>
+  read_sdf() |>
+  generate_full_scene(scale=1.5) |>
   render_model(samples=256,sample_method="sobol_blue")
 
 
 # Force bonds to appear as a single link (to focus purely on the shape of the molecule)
-get_example_molecule("tubocurarine_chloride") \%>\%
-  read_sdf() \%>\%
-  generate_full_scene(force_single_bonds = TRUE) \%>\%
+get_example_molecule("tubocurarine_chloride") |>
+  read_sdf() |>
+  generate_full_scene(force_single_bonds = TRUE) |>
   render_model(samples=256,sample_method="sobol_blue")
 
 }

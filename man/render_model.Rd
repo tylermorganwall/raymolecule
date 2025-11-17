@@ -45,35 +45,35 @@ will change this calculation. Use `rayrender::render_scene()` instead if this is
 \examples{
 # Generate a scene with caffeine molecule with just the atoms
 \donttest{
-get_example_molecule("caffeine") \%>\%
-  read_sdf() \%>\%
-  generate_full_scene() \%>\%
+get_example_molecule("caffeine") |>
+  read_sdf() |>
+  generate_full_scene() |>
   render_model(samples=256,sample_method="sobol_blue")
 
 #Light the example from below as well
-get_example_molecule("caffeine") \%>\%
-  read_sdf() \%>\%
-  generate_full_scene() \%>\%
+get_example_molecule("caffeine") |>
+  read_sdf() |>
+  generate_full_scene() |>
   render_model(lights = "both", samples=256,sample_method="sobol_blue")
 
 #Generate a scene with penicillin, increasing the number of samples and the width/height
 #for a higher quality render.
-get_example_molecule("penicillin") \%>\%
-  read_sdf() \%>\%
-  generate_full_scene() \%>\%
+get_example_molecule("penicillin") |>
+  read_sdf() |>
+  generate_full_scene() |>
   render_model(lights = "both", samples=256, width=800, height=800,sample_method="sobol_blue")
 
 #Render the scene with rayvertex and custom lights
-get_example_molecule("penicillin") \%>\%
-  read_sdf() \%>\%
-  generate_full_scene(pathtrace=FALSE) \%>\%
+get_example_molecule("penicillin") |>
+  read_sdf() |>
+  generate_full_scene(pathtrace=FALSE) |>
   render_model(width=800, height=800,background="grey66",
                lights = rayvertex::directional_light(c(0.2,1,1)))
 
 #Rotate the molecule 30 degrees around the y axis, and the 30 degrees around the z axis
-get_example_molecule("penicillin") \%>\%
-  read_sdf() \%>\%
-  generate_full_scene() \%>\%
+get_example_molecule("penicillin") |>
+  read_sdf() |>
+  generate_full_scene() |>
   render_model(lights = "both", samples=256, width=800, height=800,
                angle=c(0,30,30),sample_method="sobol_blue")
 
@@ -82,11 +82,11 @@ get_example_molecule("penicillin") \%>\%
 #Add a checkered plane underneath, using rayrender::add_object and rayrender::xz_rect().
 #We also pass a value to `clamp_value` to minimize fireflies (bright spots).
 library(rayrender)
-get_example_molecule("skatole") \%>\%
-  read_sdf() \%>\%
-  generate_full_scene() \%>\%
+get_example_molecule("skatole") |>
+  read_sdf() |>
+  generate_full_scene() |>
   add_object(xz_rect(xwidth=1000,zwidth=1000,y=-4,
-                     material=diffuse(color="#330000",checkercolor="#770000"))) \%>\%
+                     material=diffuse(color="#330000",checkercolor="#770000"))) |>
   render_model(samples=256, width=800, height=800, clamp_value=10,
                sample_method="sobol_blue")
 }

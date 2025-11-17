@@ -15,9 +15,24 @@
 #' get_example_molecule("cinnemaldehyde")
 #' get_example_molecule("geraniol")
 get_example_molecule = function(molecule) {
-  if(!molecule %in% c("benzene", "buckyball","caffeine", "capsaicin", "cinnemaldehyde", "geraniol", "luciferin", "morphine",
-                     "penicillin", "pfoa", "skatole", "tubocurarine_chloride")) {
-    stop("molecule ", molecule, "not found")
-  }
-  system.file("extdata", sprintf("%s.txt",molecule), package="raymolecule")
+	if (
+		!molecule %in%
+			c(
+				"benzene",
+				"buckyball",
+				"caffeine",
+				"capsaicin",
+				"cinnemaldehyde",
+				"geraniol",
+				"luciferin",
+				"morphine",
+				"penicillin",
+				"pfoa",
+				"skatole",
+				"tubocurarine_chloride"
+			)
+	) {
+		stop("molecule ", molecule, "not found")
+	}
+	system.file("extdata", sprintf("%s.txt", molecule), package = "raymolecule")
 }

@@ -49,21 +49,21 @@ Reads an SDF file and extracts the 3D molecule model
 \examples{
 #Generate a scene with benzene molecule with just the atoms
 \donttest{
-get_example_molecule("benzene") \%>\%
-  read_sdf() \%>\%
-  generate_bond_scene() \%>\%
+get_example_molecule("benzene") |>
+  read_sdf() |>
+  generate_bond_scene() |>
   render_model(lights = "both", samples=256,sample_method="sobol_blue")
 
 #Force single bonds to just show the shape of the molecule
-get_example_molecule("benzene") \%>\%
-  read_sdf() \%>\%
-  generate_bond_scene(force_single_bonds = TRUE) \%>\%
+get_example_molecule("benzene") |>
+  read_sdf() |>
+  generate_bond_scene(force_single_bonds = TRUE) |>
   render_model(lights = "both", samples=256,sample_method="sobol_blue")
 
 #Generate a scene with PFOA, reducing the inter-atom spacing
-get_example_molecule("pfoa") \%>\%
-  read_sdf() \%>\%
-  generate_bond_scene(scale=0.3,force_single_bonds = TRUE) \%>\%
+get_example_molecule("pfoa") |>
+  read_sdf() |>
+  generate_bond_scene(scale=0.3,force_single_bonds = TRUE) |>
   render_model(lights = "both", samples=256,sample_method="sobol_blue")
 }
 }

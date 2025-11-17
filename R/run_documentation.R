@@ -9,5 +9,5 @@
 #' # See if the documentation should be run.
 #' run_documentation()
 run_documentation = function() {
-  return(identical(Sys.getenv("IN_PKGDOWN"), "true"))
+	return(identical(Sys.getenv("IN_PKGDOWN"), "true"))
 }

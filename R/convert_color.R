@@ -9,14 +9,21 @@
 #' @examples
 #' #none
 convert_color = function(color, as_hex = FALSE) {
-  if(inherits(color,"character")) {
-    color = as.vector(grDevices::col2rgb(color))/255
-  }
-  stopifnot(all(color <= 1))
-  stopifnot(all(color >= 0))
-  if(as_hex) {
-    paste0("#",paste0(format(as.hexmode(round(color*255,0)),width=2),collapse=""),collapse="")
-  } else {
-    color
-  }
+	if (inherits(color, "character")) {
+		color = as.vector(grDevices::col2rgb(color)) / 255
+	}
+	stopifnot(all(color <= 1))
+	stopifnot(all(color >= 0))
+	if (as_hex) {
+		paste0(
+			"#",
+			paste0(
+				format(as.hexmode(round(color * 255, 0)), width = 2),
+				collapse = ""
+			),
+			collapse = ""
+		)
+	} else {
+		color
+	}
 }
