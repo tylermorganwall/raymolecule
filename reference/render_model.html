@@ -21,7 +21,7 @@ will change this calculation. Use `rayrender::render_scene()` instead if this is
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">raymolecule</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.6.0</span>
       </span>
     </div>
 
@@ -124,39 +124,39 @@ light information generated with `rayvertex`.</p></dd>
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Generate a scene with caffeine molecule with just the atoms</span></span></span>
 <span class="r-in"><span><span class="co"># \donttest{</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">render_model</span><span class="op">(</span>samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="render_model-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Light the example from below as well</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">render_model</span><span class="op">(</span>lights <span class="op">=</span> <span class="st">"both"</span>, samples<span class="op">=</span><span class="fl">256</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="render_model-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Generate a scene with penicillin, increasing the number of samples and the width/height</span></span></span>
 <span class="r-in"><span><span class="co">#for a higher quality render.</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"penicillin"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"penicillin"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">render_model</span><span class="op">(</span>lights <span class="op">=</span> <span class="st">"both"</span>, samples<span class="op">=</span><span class="fl">256</span>, width<span class="op">=</span><span class="fl">800</span>, height<span class="op">=</span><span class="fl">800</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="render_model-3.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Render the scene with rayvertex and custom lights</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"penicillin"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span>pathtrace<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"penicillin"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span>pathtrace<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">render_model</span><span class="op">(</span>width<span class="op">=</span><span class="fl">800</span>, height<span class="op">=</span><span class="fl">800</span>,background<span class="op">=</span><span class="st">"grey66"</span>,</span></span>
 <span class="r-in"><span>               lights <span class="op">=</span> <span class="fu">rayvertex</span><span class="fu">::</span><span class="fu"><a href="https://www.rayvertex.com/reference/directional_light.html" class="external-link">directional_light</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="render_model-4.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Rotate the molecule 30 degrees around the y axis, and the 30 degrees around the z axis</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"penicillin"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"penicillin"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">render_model</span><span class="op">(</span>lights <span class="op">=</span> <span class="st">"both"</span>, samples<span class="op">=</span><span class="fl">256</span>, width<span class="op">=</span><span class="fl">800</span>, height<span class="op">=</span><span class="fl">800</span>,</span></span>
 <span class="r-in"><span>               angle<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">30</span>,<span class="fl">30</span><span class="op">)</span>,sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="render_model-5.png" alt="" width="700" height="433"></span>
@@ -171,11 +171,11 @@ light information generated with `rayvertex`.</p></dd>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> The following object is masked from ‘package:raymolecule’:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>     run_documentation</span>
-<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"skatole"</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span><span class="fu"><a href="get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"skatole"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="http://www.rayrender.net/reference/add_object.html" class="external-link">add_object</a></span><span class="op">(</span><span class="fu"><a href="http://www.rayrender.net/reference/xz_rect.html" class="external-link">xz_rect</a></span><span class="op">(</span>xwidth<span class="op">=</span><span class="fl">1000</span>,zwidth<span class="op">=</span><span class="fl">1000</span>,y<span class="op">=</span><span class="op">-</span><span class="fl">4</span>,</span></span>
-<span class="r-in"><span>                     material<span class="op">=</span><span class="fu"><a href="http://www.rayrender.net/reference/diffuse.html" class="external-link">diffuse</a></span><span class="op">(</span>color<span class="op">=</span><span class="st">"#330000"</span>,checkercolor<span class="op">=</span><span class="st">"#770000"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>                     material<span class="op">=</span><span class="fu"><a href="http://www.rayrender.net/reference/diffuse.html" class="external-link">diffuse</a></span><span class="op">(</span>color<span class="op">=</span><span class="st">"#330000"</span>,checkercolor<span class="op">=</span><span class="st">"#770000"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">render_model</span><span class="op">(</span>samples<span class="op">=</span><span class="fl">256</span>, width<span class="op">=</span><span class="fl">800</span>, height<span class="op">=</span><span class="fl">800</span>, clamp_value<span class="op">=</span><span class="fl">10</span>,</span></span>
 <span class="r-in"><span>               sample_method<span class="op">=</span><span class="st">"sobol_blue"</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="render_model-6.png" alt="" width="700" height="433"></span>
@@ -194,7 +194,7 @@ light information generated with `rayvertex`.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
       </footer></div>
