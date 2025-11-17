@@ -154,77 +154,80 @@
 <span><span class="co">#&gt;   ..$ from  : num [1:47] 1 1 2 2 3 3 3 3 4 4 ...</span></span>
 <span><span class="co">#&gt;   ..$ to    : num [1:47] 7 40 20 44 4 7 8 13 5 9 ...</span></span>
 <span><span class="co">#&gt;   ..$ number: num [1:47] 1 1 1 1 1 1 1 1 1 1 ...</span></span></code></pre></div>
-<p>We can then pass the list from <code>get_example_molecule() |&gt; read_sdf()</code> or from <code><a href="reference/get_molecule.html">get_molecule()</a></code> to the <code><a href="reference/generate_full_scene.html">generate_full_scene()</a></code>, <code><a href="reference/generate_atom_scene.html">generate_atom_scene()</a></code>, or <code><a href="reference/generate_bond_scene.html">generate_bond_scene()</a></code> functions to convert this representation to a rayrender/rayvertex scene. This can then be passed on the <code><a href="reference/render_model.html">render_model()</a></code> function, which will call rayrender’s <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">render_scene()</a></code> or rayvertex’s <code>rasterize_scene()</code> functions to render it. This function automatically ensures the molecule is centered and in frame, and sets up lighting, and can accept arguments to rotate the molecule. For more rendering options, see <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">rayrender::render_scene()</a></code> and <code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rayvertex::rasterize_scene()</a></code>.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co">#Specify a width, height, and number of samples for the image (more samples == less noise)</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">get_example_molecule</span>(<span class="st">"caffeine"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>    <span class="fu">read_sdf</span>() <span class="sc">|&gt;</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>    <span class="fu">generate_full_scene</span>() <span class="sc">|&gt;</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>    <span class="fu">render_model</span>(<span class="at">width =</span> <span class="dv">800</span>, <span class="at">height =</span> <span class="dv">800</span>, <span class="at">samples =</span> <span class="dv">32</span>)</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#Light from both bottom and top</span></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="fu">get_example_molecule</span>(<span class="st">"cinnemaldehyde"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>    <span class="fu">read_sdf</span>() <span class="sc">|&gt;</span></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>    <span class="fu">generate_full_scene</span>() <span class="sc">|&gt;</span></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>    <span class="fu">render_model</span>(<span class="at">lights =</span> <span class="st">"both"</span>, <span class="at">width =</span> <span class="dv">800</span>, <span class="at">height =</span> <span class="dv">800</span>, <span class="at">samples =</span> <span class="dv">32</span>)</span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a></span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#Rotate the molecule and add a non-zero aperture setting to get depth of field effect</span></span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="fu">get_example_molecule</span>(<span class="st">"penicillin"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>    <span class="fu">read_sdf</span>() <span class="sc">|&gt;</span></span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>    <span class="fu">generate_full_scene</span>() <span class="sc">|&gt;</span></span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>    <span class="fu">render_model</span>(</span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>        <span class="at">lights =</span> <span class="st">"both"</span>,</span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>        <span class="at">width =</span> <span class="dv">800</span>,</span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>        <span class="at">height =</span> <span class="dv">800</span>,</span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>        <span class="at">samples =</span> <span class="dv">64</span>,</span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>        <span class="at">angle =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">30</span>, <span class="dv">0</span>),</span>
-<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>        <span class="at">aperture =</span> <span class="dv">2</span>,</span>
-<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>        <span class="at">fov =</span> <span class="dv">22</span></span>
-<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a></span>
-<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt; Error in parse(text = input): &lt;text&gt;:26:0: unexpected end of input</span></span>
-<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt; 24:                 fov = 22</span></span>
-<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt; 25: </span></span>
-<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="co">#&gt;    ^</span></span></code></pre></div>
-<p>We can use <code>rayvertex</code> to render images much more quickly and noise free, as well as include a toon cel-shading effect.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">library</span>(rayvertex)</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#Render a basic example with rayvertex</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="fu">get_example_molecule</span>(<span class="st">"tubocurarine_chloride"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>    <span class="fu">read_sdf</span>() <span class="sc">|&gt;</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>    <span class="fu">generate_full_scene</span>(<span class="at">pathtrace =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>    <span class="fu">render_model</span>(<span class="at">width =</span> <span class="dv">800</span>, <span class="at">height =</span> <span class="dv">800</span>, <span class="at">background =</span> <span class="st">"grey66"</span>)</span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a></span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#Customize the material with toon shading</span></span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>shiny_toon_material <span class="ot">=</span> <span class="fu">material_list</span>(</span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>    <span class="at">type =</span> <span class="st">"toon_phong"</span>,</span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>    <span class="at">toon_levels =</span> <span class="dv">3</span>,</span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>    <span class="at">toon_outline_width =</span> <span class="dv">10</span></span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>)</span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="fu">get_example_molecule</span>(<span class="st">"morphine"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>    <span class="fu">read_sdf</span>() <span class="sc">|&gt;</span></span>
-<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>    <span class="fu">generate_full_scene</span>(</span>
-<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>        <span class="at">pathtrace =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>        <span class="at">material_vertex =</span> shiny_toon_material</span>
-<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>    <span class="fu">render_model</span>(<span class="at">width =</span> <span class="dv">800</span>, <span class="at">height =</span> <span class="dv">800</span>, <span class="at">background =</span> <span class="st">"grey66"</span>)</span>
-<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a></span>
-<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="co">#Customize the lights with rayvertex</span></span>
-<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="fu">get_example_molecule</span>(<span class="st">"skatole"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>    <span class="fu">read_sdf</span>() <span class="sc">|&gt;</span></span>
-<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>    <span class="fu">generate_full_scene</span>(<span class="at">pathtrace =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a>    <span class="fu">render_model</span>(</span>
-<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a>        <span class="at">width =</span> <span class="dv">800</span>,</span>
-<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a>        <span class="at">height =</span> <span class="dv">800</span>,</span>
-<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>        <span class="at">angle =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">30</span>, <span class="dv">0</span>),</span>
-<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>        <span class="at">background =</span> <span class="st">"grey66"</span>,</span>
-<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a>        <span class="at">lights =</span> <span class="fu">directional_light</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a>            <span class="fu">add_light</span>(<span class="fu">directional_light</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>), <span class="at">color =</span> <span class="st">"red"</span>))</span>
-<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a></span>
-<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a><span class="co">#&gt; Error in parse(text = input): &lt;text&gt;:35:0: unexpected end of input</span></span>
-<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a><span class="co">#&gt; 33:                         add_light(directional_light(c(0, -1, 0), color = "red"))</span></span>
-<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="co">#&gt; 34: </span></span>
-<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a><span class="co">#&gt;    ^</span></span></code></pre></div>
-<p>You can turn off lighting in <code><a href="reference/render_model.html">render_model()</a></code> and customize the scene (adding different objects or lights) by using rayrender’s <code><a href="http://www.rayrender.net/reference/add_object.html" class="external-link">add_object()</a></code> function or rayvertex’s <code>add_shape()</code> function. If you use <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">rayrender::render_scene()</a></code>/<code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rayvertex::rasterize_scene()</a></code> instead of <code><a href="reference/render_model.html">render_model()</a></code>, you have to set up the camera position and field of view yourself.</p>
+<p>We can then pass the list from <code>get_example_molecule() |&gt; read_sdf()</code> or from <code><a href="reference/get_molecule.html">get_molecule()</a></code> to the <code><a href="reference/generate_full_scene.html">generate_full_scene()</a></code>, <code><a href="reference/generate_atom_scene.html">generate_atom_scene()</a></code>, or <code><a href="reference/generate_bond_scene.html">generate_bond_scene()</a></code> functions to convert this representation to a rayrender/rayvertex scene. This can then be passed on the <code><a href="reference/render_model.html">render_model()</a></code> function, which will call rayrender’s <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">render_scene()</a></code> or rayvertex’s <code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rasterize_scene()</a></code> functions to render it. This function automatically ensures the molecule is centered and in frame, and sets up lighting, and can accept arguments to rotate the molecule. For more rendering options, see <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">rayrender::render_scene()</a></code> and <code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rayvertex::rasterize_scene()</a></code>.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#Specify a width, height, and number of samples for the image (more samples == less noise)</span></span>
+<span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-5-1.png" width="100%"></p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="co">#Light from both bottom and top</span></span>
+<span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"cinnemaldehyde"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>lights <span class="op">=</span> <span class="st">"both"</span>, width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-5-2.png" width="100%"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="co">#Rotate the molecule and add a non-zero aperture setting to get depth of field effect</span></span>
+<span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"penicillin"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span></span>
+<span>        lights <span class="op">=</span> <span class="st">"both"</span>,</span>
+<span>        width <span class="op">=</span> <span class="fl">800</span>,</span>
+<span>        height <span class="op">=</span> <span class="fl">800</span>,</span>
+<span>        samples <span class="op">=</span> <span class="fl">64</span>,</span>
+<span>        angle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">30</span>, <span class="fl">0</span><span class="op">)</span>,</span>
+<span>        aperture <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>        fov <span class="op">=</span> <span class="fl">22</span></span>
+<span>    <span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-5-3.png" width="100%"> We can use <code>rayvertex</code> to render images much more quickly and noise free, as well as include a toon cel-shading effect.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.rayvertex.com" class="external-link">rayvertex</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">#Render a basic example with rayvertex</span></span>
+<span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"tubocurarine_chloride"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, background <span class="op">=</span> <span class="st">"grey66"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-6-1.png" width="100%"></p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="co">#Customize the material with toon shading</span></span>
+<span><span class="va">shiny_toon_material</span> <span class="op">=</span> <span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span></span>
+<span>    type <span class="op">=</span> <span class="st">"toon_phong"</span>,</span>
+<span>    toon_levels <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>    toon_outline_width <span class="op">=</span> <span class="fl">10</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"morphine"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span></span>
+<span>        pathtrace <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>        material_vertex <span class="op">=</span> <span class="va">shiny_toon_material</span></span>
+<span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, background <span class="op">=</span> <span class="st">"grey66"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-6-2.png" width="100%"></p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="co">#Customize the lights with rayvertex</span></span>
+<span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"skatole"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span></span>
+<span>        width <span class="op">=</span> <span class="fl">800</span>,</span>
+<span>        height <span class="op">=</span> <span class="fl">800</span>,</span>
+<span>        angle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">30</span>, <span class="fl">0</span><span class="op">)</span>,</span>
+<span>        background <span class="op">=</span> <span class="st">"grey66"</span>,</span>
+<span>        lights <span class="op">=</span> <span class="fu"><a href="https://www.rayvertex.com/reference/directional_light.html" class="external-link">directional_light</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>            <span class="fu"><a href="https://www.rayvertex.com/reference/add_light.html" class="external-link">add_light</a></span><span class="op">(</span><span class="fu"><a href="https://www.rayvertex.com/reference/directional_light.html" class="external-link">directional_light</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="op">-</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span>, color <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-6-3.png" width="100%"></p>
+<p>You can turn off lighting in <code><a href="reference/render_model.html">render_model()</a></code> and customize the scene (adding different objects or lights) by using rayrender’s <code><a href="http://www.rayrender.net/reference/add_object.html" class="external-link">add_object()</a></code> function or rayvertex’s <code><a href="https://www.rayvertex.com/reference/add_shape.html" class="external-link">add_shape()</a></code> function. If you use <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">rayrender::render_scene()</a></code>/<code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rayvertex::rasterize_scene()</a></code> instead of <code><a href="reference/render_model.html">render_model()</a></code>, you have to set up the camera position and field of view yourself.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.rayrender.net" class="external-link">rayrender</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">buckyball</span> <span class="op">=</span> <span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"buckyball"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -262,19 +265,9 @@
 <span>        samples <span class="op">=</span> <span class="fl">64</span>,</span>
 <span>        fov <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>        aperture <span class="op">=</span> <span class="fl">1</span></span>
-<span>    <span class="op">)</span></span>
-<span><span class="co">#&gt; --------------------------Interactive Mode Controls---------------------------</span></span>
-<span><span class="co">#&gt; W/A/S/D: Horizontal Movement: | Q/Z: Vertical Movement | Up/Down: Adjust FOV | ESC: Close</span></span>
-<span><span class="co">#&gt; Left/Right: Adjust Aperture  | 1/2: Adjust Focal Distance | 3/4: Rotate Environment Light </span></span>
-<span><span class="co">#&gt; P: Print Camera Info | R: Reset Camera |  TAB: Toggle Orbit Mode |  E/C: Adjust Step Size</span></span>
-<span><span class="co">#&gt; K: Save Keyframe | L: Reset Camera to Last Keyframe (if set) | F: Toggle Fast Travel Mode</span></span>
-<span><span class="co">#&gt; Left Mouse Click: Change Look At (new focal distance) | Right Mouse Click: Change Look At</span></span></code></pre></div>
-<div class="figure">
-<img src="reference/figures/README-unnamed-chunk-7-1.png" alt="plot of chunk unnamed-chunk-7" width="100%"><p class="caption">
-plot of chunk unnamed-chunk-7
-</p>
-</div>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<span>    <span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-7-1.png" width="100%"></p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co">#Generate ground underneath the model and use a light to cast a shadow</span></span>
 <span><span class="fu"><a href="http://www.rayrender.net/reference/generate_ground.html" class="external-link">generate_ground</a></span><span class="op">(</span>depth <span class="op">=</span> <span class="op">-</span><span class="fl">4</span>, material <span class="op">=</span> <span class="fu"><a href="http://www.rayrender.net/reference/diffuse.html" class="external-link">diffuse</a></span><span class="op">(</span>color <span class="op">=</span> <span class="st">"purple"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -288,18 +281,8 @@ plot of chunk unnamed-chunk-7
 <span>        fov <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>        lookfrom <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5.96</span>, <span class="fl">0.99</span>, <span class="fl">29.43</span><span class="op">)</span>,</span>
 <span>        lookat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.80</span>, <span class="fl">0.26</span>, <span class="fl">3.91</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span>
-<span><span class="co">#&gt; --------------------------Interactive Mode Controls---------------------------</span></span>
-<span><span class="co">#&gt; W/A/S/D: Horizontal Movement: | Q/Z: Vertical Movement | Up/Down: Adjust FOV | ESC: Close</span></span>
-<span><span class="co">#&gt; Left/Right: Adjust Aperture  | 1/2: Adjust Focal Distance | 3/4: Rotate Environment Light </span></span>
-<span><span class="co">#&gt; P: Print Camera Info | R: Reset Camera |  TAB: Toggle Orbit Mode |  E/C: Adjust Step Size</span></span>
-<span><span class="co">#&gt; K: Save Keyframe | L: Reset Camera to Last Keyframe (if set) | F: Toggle Fast Travel Mode</span></span>
-<span><span class="co">#&gt; Left Mouse Click: Change Look At (new focal distance) | Right Mouse Click: Change Look At</span></span></code></pre></div>
-<div class="figure">
-<img src="reference/figures/README-unnamed-chunk-7-2.png" alt="plot of chunk unnamed-chunk-7" width="100%"><p class="caption">
-plot of chunk unnamed-chunk-7
-</p>
-</div>
+<span>    <span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-7-2.png" width="100%"></p>
 </div>
 </div>
   </div>
