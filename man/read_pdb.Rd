@@ -9,21 +9,24 @@ read_pdb(filename, atom = TRUE, nsr = TRUE)
 \arguments{
 \item{filename}{Path to the PDB file.}
 
-\item{atom}{Default `TRUE`. Whether to pull out standard residue (ATOM) records.}
+\item{atom}{Default `TRUE`. Whether to include standard residue `ATOM`
+records in `model$atoms`.}
 
-\item{nsr}{Default `TRUE`. Whether to pull out nonstandard residue (HETAHM) records.}
+\item{nsr}{Default `TRUE`. Whether to include `HETATM` records in
+`model$atoms`.}
 }
 \value{
-List giving the atom locations.
+List giving the parsed PDB model.
 }
 \description{
-Reads an PDB file and extracts the atom locations and bonds (does not include any other structual
-information currently). This pulls out ATOM and HETAHM records by default, along with available
-connections.
+Reads a legacy fixed-width PDB file and extracts atom locations, bond
+connections, backbone residue information, and secondary structure records.
+`model$atoms` and `model$bonds` remain compatible with the existing atom and
+bond scene generators.
 }
 \examples{
-#This assumes a hypothetical PDB file in your working directory:
-if(file.exists("3nir.pdb")) {
+# This assumes a hypothetical PDB file in your working directory:
+if (file.exists("3nir.pdb")) {
   read_pdb("3nir.pdb") |>
     generate_full_scene() |>
     render_model()

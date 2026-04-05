@@ -14,8 +14,11 @@ Imports:
     PeriodicTable, 
     httr,
     rayvertex (>= 0.14.0)
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
 LazyData: true
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 URL: http://www.raymolecule.com/,
      https://github.com/tylermorganwall/raymolecule
 BugReports: https://github.com/tylermorganwall/raymolecule/issues

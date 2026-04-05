@@ -86,20 +86,47 @@ render_model = function(
 	if (pathtraced) {
 		is_not_light = unlist(lapply(scene$material, \(x) x$type)) != "light"
 
+		bbox_x = c()
+		bbox_y = c()
+		bbox_z = c()
+		max_sphere_radii = 0
+
 		scene_model = scene[
 			is_not_light &
 				(scene$shape == "cylinder" | scene$shape == "sphere"),
 		]
-		bbox_x = range(scene_model$x, na.rm = TRUE)
-		bbox_y = range(scene_model$y, na.rm = TRUE)
-		bbox_z = range(scene_model$z, na.rm = TRUE)
-		spheresizes = unlist(lapply(scene$shape_info, \(x) x[[1]]$radius))[
-			is_not_light
-		]
-		if (length(spheresizes) > 0) {
-			max_sphere_radii = max(spheresizes, na.rm = TRUE)
-		} else {
-			max_sphere_radii = 0.5
+		if (nrow(scene_model) > 0) {
+			bbox_x = range(c(bbox_x, scene_model$x), na.rm = TRUE)
+			bbox_y = range(c(bbox_y, scene_model$y), na.rm = TRUE)
+			bbox_z = range(c(bbox_z, scene_model$z), na.rm = TRUE)
+			spheresizes = unlist(lapply(scene$shape_info, \(x) x[[1]]$radius))[
+				is_not_light
+			]
+			if (length(spheresizes) > 0) {
+				max_sphere_radii = max(spheresizes, na.rm = TRUE)
+			}
+		}
+
+		raymesh_rows = which(is_not_light & scene$shape == "raymesh")
+		if (length(raymesh_rows) > 0) {
+			for (row_index in raymesh_rows) {
+				mesh = scene$shape_info[[row_index]]$mesh_info[[1]]
+				mesh_bbox = rayvertex::get_mesh_bbox(mesh)
+				mesh_scale = scene$transforms[[row_index]]$scale[[1]]
+				if (length(mesh_scale) == 1) {
+					mesh_scale = c(mesh_scale, mesh_scale, mesh_scale)
+				}
+				mesh_x = as.numeric(mesh_bbox[, "x"]) * mesh_scale[1] + scene$x[row_index]
+				mesh_y = as.numeric(mesh_bbox[, "y"]) * mesh_scale[2] + scene$y[row_index]
+				mesh_z = as.numeric(mesh_bbox[, "z"]) * mesh_scale[3] + scene$z[row_index]
+				bbox_x = range(c(bbox_x, mesh_x), na.rm = TRUE)
+				bbox_y = range(c(bbox_y, mesh_y), na.rm = TRUE)
+				bbox_z = range(c(bbox_z, mesh_z), na.rm = TRUE)
+			}
+		}
+
+		if (length(bbox_x) == 0) {
+			stop("Scene does not contain any renderable objects")
 		}
 
 		widest = max(c(abs(bbox_x), abs(bbox_y), abs(bbox_z)))
