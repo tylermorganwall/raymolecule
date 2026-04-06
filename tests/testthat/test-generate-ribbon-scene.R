@@ -18,6 +18,21 @@ make_two_chain_model = function() {
   return(read_pdb(file))
 }
 
+make_single_chain_model = function() {
+  chain_a_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
+  chain_a_2 = backbone_residue_lines(chain_a_1$next_serial, "A", 2, "GLY", c(1.5, 0.1, 0.2))
+
+  file = write_pdb_fixture(c(
+    chain_a_1$lines,
+    chain_a_2$lines,
+    format_ter_line(19, "GLY", "A", 2),
+    "END"
+  ))
+  on.exit(unlink(file), add = TRUE)
+
+  return(read_pdb(file))
+}
+
 make_texture_file = function() {
   file = tempfile(fileext = ".png")
   grDevices::png(file, width = 16, height = 4)
@@ -65,6 +80,39 @@ test_that("uv mode attaches texture coordinates and texture locations", {
 
   expect_true(all(vapply(scene$materials, function(x) x[[1]]$diffuse_texname, character(1)) == texture))
   expect_true(length(scene$texcoords) > 0)
+})
+
+test_that("single-chain default mode uses the built-in UV texture", {
+  model = make_single_chain_model()
+
+  scene = generate_ribbon_scene(
+    model,
+    pathtrace = FALSE,
+    subdivisions = 2
+  )
+
+  texture_names = vapply(scene$materials, function(x) x[[1]]$diffuse_texname, character(1))
+
+  expect_equal(length(texture_names), 1)
+  expect_true(nzchar(texture_names[[1]]))
+  expect_true(file.exists(texture_names[[1]]))
+})
+
+test_that("multi-chain default mode preserves per-chain coloring", {
+  model = make_two_chain_model()
+
+  scene = generate_ribbon_scene(
+    model,
+    pathtrace = FALSE,
+    subdivisions = 2
+  )
+
+  diffuse_texnames = vapply(scene$materials, function(x) x[[1]]$diffuse_texname, character(1))
+  material_a = scene$materials[[1]][[1]]$diffuse
+  material_b = scene$materials[[2]][[1]]$diffuse
+
+  expect_true(all(diffuse_texnames == ""))
+  expect_false(isTRUE(all.equal(material_a, material_b)))
 })
 
 test_that("generate_ribbon_scene returns valid rayvertex and rayrender scenes", {

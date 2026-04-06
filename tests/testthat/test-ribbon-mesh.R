@@ -1,5 +1,17 @@
-make_mesh_residue_table = function(ca_points, o_points, chain_id = "A") {
+make_mesh_residue_table = function(
+  ca_points,
+  o_points,
+  chain_id = "A",
+  ss_class = NULL,
+  sheet_id = NULL
+) {
   count = nrow(ca_points)
+  if (is.null(ss_class)) {
+    ss_class = rep("loop", count)
+  }
+  if (is.null(sheet_id)) {
+    sheet_id = rep(NA_character_, count)
+  }
   data.frame(
     chain_id = rep(chain_id, count),
     res_seq = seq_len(count),
@@ -24,9 +36,9 @@ make_mesh_residue_table = function(ca_points, o_points, chain_id = "A") {
     has_o = TRUE,
     chain_break_before = c(TRUE, rep(FALSE, count - 1)),
     chain_break_after = c(rep(FALSE, count - 1), TRUE),
-    ss_class = rep("loop", count),
+    ss_class = ss_class,
     helix_id = rep(NA_character_, count),
-    sheet_id = rep(NA_character_, count),
+    sheet_id = sheet_id,
     stringsAsFactors = FALSE
   )
 }
@@ -138,6 +150,48 @@ test_that("cross-section resolution must be at least eight vertices", {
   )
 })
 
+test_that("sheet runs generate tapered arrow widths", {
+  ca_points = matrix(
+    c(
+      0, 0, 0,
+      1.5, 0, 0.1,
+      3.0, 0.1, 0.2,
+      4.5, 0.1, 0.3,
+      6.0, 0.0, 0.4,
+      7.5, -0.1, 0.5
+    ),
+    ncol = 3,
+    byrow = TRUE
+  )
+  o_points = ca_points + matrix(
+    rep(c(0, 0.8, 0), nrow(ca_points)),
+    ncol = 3,
+    byrow = TRUE
+  )
+  residues = make_mesh_residue_table(
+    ca_points,
+    o_points,
+    ss_class = c("loop", "sheet", "sheet", "sheet", "loop", "loop"),
+    sheet_id = c(NA, "S1", "S1", "S1", NA, NA)
+  )
+
+  mesh = raymolecule:::build_ribbon_mesh(
+    residues = residues,
+    subdivisions = 4,
+    cross_section_resolution = 16
+  )$chains[[1]]
+
+  widths = mesh$sampled$sampled$ribbon_width
+  parameters = mesh$sampled$residue_parameter
+  tip_index = which.min(abs(parameters - 3))
+  pre_tip_mask = parameters >= 1 & parameters < 3
+  post_tip_index = which.min(abs(parameters - 3.25))
+
+  expect_gt(max(widths[pre_tip_mask]), 1.6)
+  expect_lt(widths[tip_index], 0.5)
+  expect_gt(widths[post_tip_index], widths[tip_index])
+})
+
 test_that("swept ribbon surface normals point outward on curved ribbons", {
   theta = seq(0, pi / 2, length.out = 5)
   ca_points = cbind(3 * cos(theta), 3 * sin(theta), seq(0, 1, length.out = 5))
@@ -190,6 +244,21 @@ test_that("twist unwrapping follows full turns continuously", {
   for (i in seq_along(wrapped_angles)) {
     previous_angle = if (i == 1L) NULL else unwrapped[i - 1L]
     unwrapped[i] = raymolecule:::choose_continuous_twist_angle(
+      angle = wrapped_angles[i],
+      previous_angle = previous_angle
+    )
+  }
+
+  expect_lt(max(abs(diff(unwrapped))) * 180 / pi, 30)
+})
+
+test_that("axial twist unwrapping suppresses guide sign flips", {
+  wrapped_angles = c(5, 175, 10, -170) * pi / 180
+  unwrapped = numeric(length(wrapped_angles))
+
+  for (i in seq_along(wrapped_angles)) {
+    previous_angle = if (i == 1L) NULL else unwrapped[i - 1L]
+    unwrapped[i] = raymolecule:::choose_continuous_axial_twist_angle(
       angle = wrapped_angles[i],
       previous_angle = previous_angle
     )

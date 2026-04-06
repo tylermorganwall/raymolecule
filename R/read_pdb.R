@@ -280,6 +280,7 @@ build_pdb_residues = function(atoms, helices, sheets, ters) {
 			ss_class = "loop",
 			helix_id = NA_character_,
 			sheet_id = NA_character_,
+			sheet_strand = NA_integer_,
 			stringsAsFactors = FALSE
 		)
 	}
@@ -625,6 +626,7 @@ apply_pdb_sheet_structure = function(residues, sheets) {
 
 		residues$ss_class[within_range] = "sheet"
 		residues$sheet_id[within_range] = sheet$sheet_id
+		residues$sheet_strand[within_range] = sheet$strand
 	}
 
 	return(residues)
@@ -917,6 +919,7 @@ empty_pdb_residues = function() {
 		ss_class = character(),
 		helix_id = character(),
 		sheet_id = character(),
+		sheet_strand = integer(),
 		stringsAsFactors = FALSE
 	))
 }

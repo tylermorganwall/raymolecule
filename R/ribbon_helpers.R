@@ -369,7 +369,7 @@ compute_guide_twist_angles = function(
 			sum(projected * transport_binormal[index, ]),
 			sum(projected * transport_normal[index, ])
 		)
-		knot_angles[[k]] = choose_continuous_twist_angle(
+		knot_angles[[k]] = choose_continuous_axial_twist_angle(
 			angle = raw_angle,
 			previous_angle = previous_angle
 		)
@@ -396,6 +396,31 @@ choose_continuous_twist_angle = function(angle, previous_angle = NULL) {
   }
   turn_count = round((previous_angle - angle) / (2 * pi))
   return(angle + 2 * pi * turn_count)
+}
+
+#' @keywords internal
+choose_continuous_axial_twist_angle = function(angle, previous_angle = NULL) {
+	directed_angle = choose_continuous_twist_angle(
+		angle = angle,
+		previous_angle = previous_angle
+	)
+	flipped_angle = choose_continuous_twist_angle(
+		angle = angle + pi,
+		previous_angle = previous_angle
+	)
+
+	if (is.null(previous_angle)) {
+		if (abs(flipped_angle) < abs(directed_angle)) {
+			return(flipped_angle)
+		}
+		return(directed_angle)
+	}
+
+	if (abs(flipped_angle - previous_angle) < abs(directed_angle - previous_angle)) {
+		return(flipped_angle)
+	}
+
+	return(directed_angle)
 }
 
 #' @keywords internal
@@ -486,6 +511,138 @@ rotate_frame_about_tangent = function(tangent, normal, binormal, angle) {
 }
 
 #' @keywords internal
+build_ribbon_dimensions = function(
+	residues,
+	residue_parameter,
+	ribbon_width,
+	ribbon_thickness,
+	arrow_length = 2,
+	arrow_width_scale = 1.75,
+	arrow_tip_scale = 0.15,
+	arrow_recovery_length = 0.75,
+	arrow_base_fraction = 0.65
+) {
+	if (!is.data.frame(residues)) {
+		stop("build_ribbon_dimensions() requires a residue data frame")
+	}
+	if (length(residue_parameter) == 0L) {
+		stop("build_ribbon_dimensions() requires sampled residue parameters")
+	}
+
+	widths = rep(ribbon_width, length(residue_parameter))
+	thicknesses = rep(ribbon_thickness, length(residue_parameter))
+	sheet_runs = find_sheet_runs(residues)
+
+	if (length(sheet_runs) == 0L) {
+		return(list(width = widths, thickness = thicknesses))
+	}
+
+		max_parameter = max(residue_parameter)
+	for (run in sheet_runs) {
+		tip_parameter = run$end - 1
+		base_parameter = max(run$start - 1, tip_parameter - arrow_length)
+		head_extent = tip_parameter - base_parameter
+		if (head_extent <= 1e-8) {
+			tip_mask = abs(residue_parameter - tip_parameter) <= 1e-8
+			widths[tip_mask] = ribbon_width * arrow_tip_scale
+		} else {
+			head_mask =
+				residue_parameter >= base_parameter &
+				residue_parameter <= tip_parameter
+			u = (residue_parameter[head_mask] - base_parameter) / head_extent
+			head_scale = numeric(length(u))
+
+			leading = u <= arrow_base_fraction
+			if (any(leading)) {
+				head_scale[leading] = 1 + (arrow_width_scale - 1) *
+					smoothstep01(u[leading] / arrow_base_fraction)
+			}
+			if (any(!leading)) {
+				trailing_u = (u[!leading] - arrow_base_fraction) / (1 - arrow_base_fraction)
+				head_scale[!leading] = arrow_width_scale +
+					(arrow_tip_scale - arrow_width_scale) * smoothstep01(trailing_u)
+			}
+				widths[head_mask] = ribbon_width * head_scale
+			}
+
+			recovery_end = min(max_parameter, tip_parameter + arrow_recovery_length)
+			if (recovery_end > tip_parameter) {
+			recovery_mask =
+				residue_parameter > tip_parameter &
+				residue_parameter <= recovery_end
+			recovery_u =
+				(residue_parameter[recovery_mask] - tip_parameter) /
+				(recovery_end - tip_parameter)
+			recovery_scale = arrow_tip_scale +
+				(1 - arrow_tip_scale) * smoothstep01(recovery_u)
+				widths[recovery_mask] = ribbon_width * recovery_scale
+			}
+		}
+
+	return(list(width = widths, thickness = thicknesses))
+}
+
+#' @keywords internal
+find_sheet_runs = function(residues) {
+	if (nrow(residues) == 0L) {
+		return(list())
+	}
+
+	sheet_mask = residues$ss_class == "sheet"
+	sheet_keys = ifelse(
+		is.na(residues$sheet_id),
+		"",
+		paste(
+			residues$sheet_id,
+			if ("sheet_strand" %in% names(residues)) residues$sheet_strand else NA_integer_,
+			sep = ":"
+		)
+	)
+	runs = list()
+	run_start = NA_integer_
+	run_key = NA_character_
+
+	for (i in seq_len(nrow(residues))) {
+		if (!sheet_mask[i]) {
+			if (!is.na(run_start)) {
+				runs[[length(runs) + 1L]] = list(start = run_start, end = i - 1L, key = run_key)
+				run_start = NA_integer_
+				run_key = NA_character_
+			}
+			next
+		}
+
+		if (is.na(run_start)) {
+			run_start = i
+			run_key = sheet_keys[i]
+			next
+		}
+
+		if (!identical(sheet_keys[i], run_key)) {
+			runs[[length(runs) + 1L]] = list(start = run_start, end = i - 1L, key = run_key)
+			run_start = i
+			run_key = sheet_keys[i]
+		}
+	}
+
+	if (!is.na(run_start)) {
+		runs[[length(runs) + 1L]] = list(
+			start = run_start,
+			end = nrow(residues),
+			key = run_key
+		)
+	}
+
+	return(runs)
+}
+
+#' @keywords internal
+smoothstep01 = function(x) {
+	clamped = pmax(0, pmin(1, x))
+	return(clamped * clamped * (3 - 2 * clamped))
+}
+
+#' @keywords internal
 build_ribbon_mesh = function(
 	residues,
 	ribbon_width = 1.6,
@@ -558,11 +715,19 @@ build_ribbon_mesh = function(
 			chain_id = chain_residues$chain_id[1],
 			residue_parameter = sampled_chain$residue_parameter
 		)
+		ribbon_dimensions = build_ribbon_dimensions(
+			residues = chain_residues,
+			residue_parameter = frame$residue_parameter,
+			ribbon_width = ribbon_width,
+			ribbon_thickness = ribbon_thickness
+		)
+		frame$sampled$ribbon_width = ribbon_dimensions$width
+		frame$sampled$ribbon_thickness = ribbon_dimensions$thickness
 
 		chain_meshes[[segment_index]] = build_single_ribbon_chain_mesh(
 			frame = frame,
-			ribbon_width = ribbon_width,
-			ribbon_thickness = ribbon_thickness,
+			ribbon_widths = ribbon_dimensions$width,
+			ribbon_thicknesses = ribbon_dimensions$thickness,
 			cross_section_resolution = cross_section_resolution,
 			chain_id = chain_residues$chain_id[1],
 			chain_index = segment_index
@@ -814,15 +979,15 @@ cap_ribbon_ends = function(ring_count, ring_size) {
 #' @keywords internal
 build_single_ribbon_chain_mesh = function(
 	frame,
-	ribbon_width,
-	ribbon_thickness,
+	ribbon_widths,
+	ribbon_thicknesses,
 	cross_section_resolution,
 	chain_id,
 	chain_index
 ) {
 	profile = ribbon_cross_section_profile(
-		ribbon_width = ribbon_width,
-		ribbon_thickness = ribbon_thickness,
+		ribbon_width = ribbon_widths[1],
+		ribbon_thickness = ribbon_thicknesses[1],
 		cross_section_resolution = cross_section_resolution
 	)
 	ring_count = nrow(frame$centerline)
@@ -850,6 +1015,11 @@ build_single_ribbon_chain_mesh = function(
 	}
 
 	for (ring_index in seq_len(ring_count)) {
+		profile = ribbon_cross_section_profile(
+			ribbon_width = ribbon_widths[ring_index],
+			ribbon_thickness = ribbon_thicknesses[ring_index],
+			cross_section_resolution = cross_section_resolution
+		)
 		ring = build_ribbon_ring(
 			center = frame$centerline[ring_index, ],
 			normal = frame$normal[ring_index, ],

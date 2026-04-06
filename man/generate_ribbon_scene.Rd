@@ -52,12 +52,14 @@ used to approximate the ribbon cross-section.}
 residue interval. Longer backbone spans are automatically refined to a
 smaller internal step size to avoid visible faceting.}
 
-\item{color_mode}{Either `"chain"` or `"uv"`.}
+\item{color_mode}{Either `"chain"` or `"uv"`. If omitted, single-chain
+proteins default to `"uv"` and multi-chain proteins default to `"chain"`.}
 
 \item{chain_colors}{Optional named vector or named list keyed by chain ID.
 Used when `color_mode = "chain"`.}
 
-\item{texture}{Optional texture path. Used when `color_mode = "uv"`.}
+\item{texture}{Optional texture path. Used when `color_mode = "uv"`. If
+omitted in UV mode, a built-in rainbow gradient is used.}
 
 \item{material}{Default `rayrender::glossy`. Rayrender material template to
 use when `pathtrace = TRUE`.}
@@ -72,7 +74,8 @@ Rayrender/rayvertex scene containing a ribbon mesh.
 Generates a mesh-based protein ribbon from a PDB model parsed with
 [read_pdb()]. The ribbon follows a CA-driven centripetal Catmull-Rom spline,
 uses O atoms to guide orientation, and is emitted as indexed watertight mesh
-data with UV coordinates.
+data with UV coordinates. Contiguous `SHEET` annotations are rendered with
+tapered C-terminal arrowheads.
 }
 \examples{
 if (file.exists("3nir.pdb")) {

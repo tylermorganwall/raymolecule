@@ -76,6 +76,35 @@ test_that("rotation-minimizing frame normals stay sign-consistent on a helix-lik
   expect_lt(max(step_angles), 35)
 })
 
+test_that("axial guide symmetry suppresses alternating sheet-like flips", {
+  ca_points = cbind(seq(0, 5, length.out = 6), rep(0, 6), rep(0, 6))
+  guide_y = c(1, -1, 1, -1, 1, -1)
+  o_points = ca_points + cbind(rep(0.8, 6), guide_y, rep(0, 6))
+  residues = make_residue_table(ca_points, o_points)
+  residues$ss_class[] = "sheet"
+  residues$sheet_id[] = "AA"
+  residues$sheet_strand = rep(1L, nrow(residues))
+
+  chain = raymolecule:::catmull_rom_chain(ca_points)
+  sampled = raymolecule:::sample_catmull_rom_chain(chain, subdivisions = 4)
+  guides = raymolecule:::build_residue_guides(residues, sampled$residue_parameter)
+  frame = raymolecule:::build_rotation_minimizing_frame(
+    centerline = sampled$centerline,
+    tangent = sampled$tangent,
+    guides = guides,
+    chain_id = "A",
+    residue_parameter = sampled$residue_parameter
+  )
+
+  dot_products = rowSums(
+    frame$normal[-1, , drop = FALSE] * frame$normal[-nrow(frame$normal), , drop = FALSE]
+  )
+  step_angles = acos(pmin(1, pmax(-1, dot_products))) * 180 / pi
+
+  expect_true(all(dot_products > 0))
+  expect_lt(max(step_angles), 25)
+})
+
 test_that("chain breaks create separate ribbon shapes", {
   chain_a_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
   chain_a_2 = backbone_residue_lines(chain_a_1$next_serial, "A", 2, "GLY", c(1.5, 0.1, 0.2))

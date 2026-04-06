@@ -3,7 +3,8 @@
 #' Generates a mesh-based protein ribbon from a PDB model parsed with
 #' [read_pdb()]. The ribbon follows a CA-driven centripetal Catmull-Rom spline,
 #' uses O atoms to guide orientation, and is emitted as indexed watertight mesh
-#' data with UV coordinates.
+#' data with UV coordinates. Contiguous `SHEET` annotations are rendered with
+#' tapered C-terminal arrowheads.
 #'
 #' @param model Model extracted from a PDB file with [read_pdb()].
 #' @param x Default `0`. X offset, applied after centering.
@@ -22,10 +23,12 @@
 #' @param subdivisions Default `8`. Minimum number of spline samples per
 #'   residue interval. Longer backbone spans are automatically refined to a
 #'   smaller internal step size to avoid visible faceting.
-#' @param color_mode Either `"chain"` or `"uv"`.
+#' @param color_mode Either `"chain"` or `"uv"`. If omitted, single-chain
+#'   proteins default to `"uv"` and multi-chain proteins default to `"chain"`.
 #' @param chain_colors Optional named vector or named list keyed by chain ID.
 #'   Used when `color_mode = "chain"`.
-#' @param texture Optional texture path. Used when `color_mode = "uv"`.
+#' @param texture Optional texture path. Used when `color_mode = "uv"`. If
+#'   omitted in UV mode, a built-in rainbow gradient is used.
 #' @param material Default `rayrender::glossy`. Rayrender material template to
 #'   use when `pathtrace = TRUE`.
 #' @param material_vertex Default `rayvertex::material_list(type = "phong")`.
@@ -58,13 +61,25 @@ generate_ribbon_scene = function(
 	material = rayrender::glossy,
 	material_vertex = rayvertex::material_list(type = "phong")
 ) {
-	color_mode = match.arg(color_mode)
-
 	if (!identical(model$pdb_type, "pdb") || !is.data.frame(model$residues)) {
 		stop("generate_ribbon_scene() requires a PDB model produced by read_pdb()")
 	}
 	if (length(scale) != 1L || !is.finite(scale) || scale <= 0) {
 		stop("scale must be a positive number")
+	}
+	if (missing(color_mode)) {
+		protein_chain_ids = unique(model$residues$chain_id[model$residues$has_ca])
+		protein_chain_ids = protein_chain_ids[!is.na(protein_chain_ids)]
+		color_mode = if (length(protein_chain_ids) <= 1L) {
+			"uv"
+		} else {
+			"chain"
+		}
+	} else {
+		color_mode = match.arg(color_mode)
+	}
+	if (identical(color_mode, "uv") && is.null(texture)) {
+		texture = default_ribbon_texture()
 	}
 	mesh_data = build_ribbon_mesh(
 		residues = model$residues,
@@ -169,6 +184,43 @@ prepare_ribbon_material = function(
 
 	return(mesh_material)
 }
+
+#' @keywords internal
+default_ribbon_texture = local({
+	texture_path = NULL
+
+	function() {
+		if (!is.null(texture_path) && file.exists(texture_path)) {
+			return(texture_path)
+		}
+
+		texture_path = file.path(tempdir(), "raymolecule-ribbon-rainbow.png")
+		if (!file.exists(texture_path)) {
+			palette = grDevices::hcl.colors(256, palette = "Spectral", rev = TRUE)
+			grDevices::png(
+				filename = texture_path,
+				width = length(palette),
+				height = 8,
+				bg = "transparent"
+			)
+			on.exit(grDevices::dev.off(), add = TRUE)
+
+			graphics::par(mar = c(0, 0, 0, 0), xaxs = "i", yaxs = "i")
+			graphics::plot.new()
+			graphics::plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
+			graphics::rasterImage(
+				image = as.raster(matrix(palette, nrow = 1L)),
+				xleft = 0,
+				ybottom = 0,
+				xright = 1,
+				ytop = 1,
+				interpolate = TRUE
+			)
+		}
+
+		return(texture_path)
+	}
+})
 
 #' @keywords internal
 rayrender_material_to_vertex_material = function(material) {
