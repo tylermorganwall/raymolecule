@@ -159,6 +159,32 @@ format_model_line = function(serial) {
   return(line)
 }
 
+format_remark350_biomolecule_line = function(assembly_id) {
+  return(sprintf("REMARK 350 BIOMOLECULE: %s", assembly_id))
+}
+
+format_remark350_apply_chains_line = function(chain_ids) {
+  return(sprintf(
+    "REMARK 350 APPLY THE FOLLOWING TO CHAINS: %s",
+    paste(chain_ids, collapse = ", ")
+  ))
+}
+
+format_remark350_biomt_line = function(row_index, transform_id, values) {
+  if (length(values) != 4L) {
+    stop("format_remark350_biomt_line() requires four numeric values")
+  }
+  return(sprintf(
+    "REMARK 350   BIOMT%d %3d %10.6f %10.6f %10.6f %14.5f",
+    row_index,
+    transform_id,
+    values[[1]],
+    values[[2]],
+    values[[3]],
+    values[[4]]
+  ))
+}
+
 backbone_residue_lines = function(serial_start, chain_id, res_seq, res_name, ca, i_code = "") {
   n = ca + c(-0.6, 0.0, 0.0)
   c_atom = ca + c(0.6, 0.0, 0.0)

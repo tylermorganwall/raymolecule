@@ -4,7 +4,13 @@
 \alias{read_pdb}
 \title{Read PDB File}
 \usage{
-read_pdb(filename, atom = TRUE, nsr = TRUE)
+read_pdb(
+  filename,
+  atom = TRUE,
+  nsr = TRUE,
+  assembly = c("asymmetric_unit", "biological"),
+  assembly_id = 1L
+)
 }
 \arguments{
 \item{filename}{Path to the PDB file.}
@@ -14,6 +20,13 @@ records in `model$atoms`.}
 
 \item{nsr}{Default `TRUE`. Whether to include `HETATM` records in
 `model$atoms`.}
+
+\item{assembly}{Default `"asymmetric_unit"`. Either the deposited asymmetric
+unit or the biological assembly generated from `REMARK 350 BIOMT`
+transforms.}
+
+\item{assembly_id}{Default `1L`. Biological assembly identifier to use when
+`assembly = "biological"`.}
 }
 \value{
 List giving the parsed PDB model.
@@ -22,13 +35,18 @@ List giving the parsed PDB model.
 Reads a legacy fixed-width PDB file and extracts atom locations, bond
 connections, backbone residue information, and secondary structure records.
 `model$atoms` and `model$bonds` remain compatible with the existing atom and
-bond scene generators.
+bond scene generators. Biological assemblies can be generated from
+`REMARK 350 BIOMT` transforms when requested.
 }
 \examples{
 # This assumes a hypothetical PDB file in your working directory:
 if (file.exists("3nir.pdb")) {
   read_pdb("3nir.pdb") |>
     generate_full_scene() |>
+    render_model()
+
+  read_pdb("3nir.pdb", assembly = "biological") |>
+    generate_ribbon_scene(pathtrace = FALSE) |>
     render_model()
 }
 }

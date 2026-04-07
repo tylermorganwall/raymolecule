@@ -105,6 +105,25 @@ test_that("axial guide symmetry suppresses alternating sheet-like flips", {
   expect_lt(max(step_angles), 25)
 })
 
+test_that("peptide-plane control guides remain sign-consistent across sheets", {
+  ca_points = cbind(seq(0, 5, length.out = 6), rep(0, 6), rep(0, 6))
+  guide_y = c(1, -1, 1, -1, 1, -1)
+  o_points = ca_points + cbind(rep(0.8, 6), guide_y, rep(0, 6))
+  residues = make_residue_table(ca_points, o_points)
+  residues$ss_class[] = "sheet"
+  residues$sheet_id[] = "AA"
+  residues$sheet_strand = rep(1L, nrow(residues))
+
+  control_guides = raymolecule:::build_control_guides(residues)
+  valid_rows = which(rowSums(is.finite(control_guides)) == 3L)
+  dot_products = rowSums(
+    control_guides[valid_rows[-1], , drop = FALSE] *
+      control_guides[valid_rows[-length(valid_rows)], , drop = FALSE]
+  )
+
+  expect_true(all(dot_products > 0))
+})
+
 test_that("chain breaks create separate ribbon shapes", {
   chain_a_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
   chain_a_2 = backbone_residue_lines(chain_a_1$next_serial, "A", 2, "GLY", c(1.5, 0.1, 0.2))

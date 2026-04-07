@@ -7,6 +7,8 @@
 render_model(
   scene,
   fov = NULL,
+  lookat = NULL,
+  lookfrom = NULL,
   angle = c(0, 0, 0),
   order_rotation = c(1, 2, 3),
   lights = "top",
@@ -18,6 +20,12 @@ render_model(
 \item{scene}{`rayrender` scene of molecule model.}
 
 \item{fov}{Default `NULL`, automatically calculated. Camera field of view.}
+
+\item{lookat}{Default `NULL`, automatically calculated as `c(0,0,0)`.
+Camera target point.}
+
+\item{lookfrom}{Default `NULL`, automatically calculated from the scene
+bounds. Camera position.}
 
 \item{angle}{Default `c(0,0,0)`. Degrees to rotate the model around the X, Y, and Z axes. If this
 is a single number, it will be taken as the Y axis rotation.}

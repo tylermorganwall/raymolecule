@@ -1,9 +1,11 @@
 #' Build Scene (ribbon)
 #'
 #' Generates a mesh-based protein ribbon from a PDB model parsed with
-#' [read_pdb()]. The ribbon follows a CA-driven centripetal Catmull-Rom spline,
-#' uses O atoms to guide orientation, and is emitted as indexed watertight mesh
-#' data with UV coordinates. Contiguous `SHEET` annotations are rendered with
+#' [read_pdb()]. Segments with contiguous peptide-plane backbone data are
+#' rendered with a peptide-plane cartoon sweep, while incomplete backbone
+#' segments fall back to a CA-driven centripetal Catmull-Rom ribbon. The mesh is
+#' emitted as indexed watertight geometry with UV coordinates, and eligible
+#' `SHEET` annotations are rendered with peptide-plane strand profiles and
 #' tapered C-terminal arrowheads.
 #'
 #' @param model Model extracted from a PDB file with [read_pdb()].
@@ -33,6 +35,15 @@
 #'   use when `pathtrace = TRUE`.
 #' @param material_vertex Default `rayvertex::material_list(type = "phong")`.
 #'   Rayvertex material template to use when `pathtrace = FALSE`.
+#' @param show_hetero_atoms Default `TRUE`. If `TRUE`, display non-protein
+#'   `HETATM` records as bare spheres alongside the ribbon.
+#' @param show_hetero_bonds Default `TRUE`. If `TRUE`, display bonds between
+#'   shown hetero atoms as a ball-and-stick overlay alongside the ribbon.
+#' @param show_waters Default `FALSE`. If `TRUE`, include water `HETATM`
+#'   records when `show_hetero_atoms = TRUE` and `show_hetero_bonds = TRUE`.
+#' @param use_vertex_normals Default `FALSE`. If `TRUE`, attach the ribbon
+#'   mesh's swept vertex normals. If `FALSE`, raster scenes omit explicit
+#'   normals and pathtraced scenes use flat face normals.
 #'
 #' @return Rayrender/rayvertex scene containing a ribbon mesh.
 #' @export
@@ -59,7 +70,11 @@ generate_ribbon_scene = function(
 	chain_colors = NULL,
 	texture = NULL,
 	material = rayrender::glossy,
-	material_vertex = rayvertex::material_list(type = "phong")
+	material_vertex = rayvertex::material_list(type = "phong"),
+	show_hetero_atoms = TRUE,
+	show_hetero_bonds = TRUE,
+	show_waters = FALSE,
+	use_vertex_normals = FALSE
 ) {
 	if (!identical(model$pdb_type, "pdb") || !is.data.frame(model$residues)) {
 		stop("generate_ribbon_scene() requires a PDB model produced by read_pdb()")
@@ -77,6 +92,18 @@ generate_ribbon_scene = function(
 		}
 	} else {
 		color_mode = match.arg(color_mode)
+	}
+	if (!is.logical(use_vertex_normals) || length(use_vertex_normals) != 1L || is.na(use_vertex_normals)) {
+		stop("use_vertex_normals must be TRUE or FALSE")
+	}
+	if (!is.logical(show_hetero_atoms) || length(show_hetero_atoms) != 1L || is.na(show_hetero_atoms)) {
+		stop("show_hetero_atoms must be TRUE or FALSE")
+	}
+	if (!is.logical(show_hetero_bonds) || length(show_hetero_bonds) != 1L || is.na(show_hetero_bonds)) {
+		stop("show_hetero_bonds must be TRUE or FALSE")
+	}
+	if (!is.logical(show_waters) || length(show_waters) != 1L || is.na(show_waters)) {
+		stop("show_waters must be TRUE or FALSE")
 	}
 	if (identical(color_mode, "uv") && is.null(texture)) {
 		texture = default_ribbon_texture()
@@ -103,6 +130,16 @@ generate_ribbon_scene = function(
 		})
 	}
 	offset = c(x, y, z)
+	visible_atoms = select_ribbon_display_atoms(
+		model = model,
+		show_hetero_atoms = show_hetero_atoms,
+		show_waters = show_waters
+	)
+	visible_bonds = select_ribbon_display_bonds(
+		model = model,
+		atoms = visible_atoms,
+		show_hetero_bonds = show_hetero_bonds
+	)
 
 	mesh_list = vector(mode = "list", length = length(mesh_data$chains))
 	for (i in seq_along(mesh_data$chains)) {
@@ -128,14 +165,65 @@ generate_ribbon_scene = function(
 			texture = texture
 		)
 
-		mesh_list[[i]] = rayvertex::construct_mesh(
-			vertices = chain_mesh$vertices,
-			indices = chain_mesh$indices,
-			normals = chain_mesh$normals,
-			norm_indices = chain_mesh$norm_indices,
-			texcoords = chain_mesh$texcoords,
-			tex_indices = chain_mesh$tex_indices,
-			material = mesh_material
+		if (use_vertex_normals) {
+			mesh_list[[i]] = rayvertex::construct_mesh(
+				vertices = chain_mesh$vertices,
+				indices = chain_mesh$indices,
+				normals = chain_mesh$normals,
+				norm_indices = chain_mesh$norm_indices,
+				texcoords = chain_mesh$texcoords,
+				tex_indices = chain_mesh$tex_indices,
+				material = mesh_material
+			)
+		} else if (pathtrace) {
+			flat_normals = build_flat_mesh_normals(
+				vertices = chain_mesh$vertices,
+				indices = chain_mesh$indices,
+				fallback_normals = chain_mesh$normals,
+				fallback_norm_indices = chain_mesh$norm_indices
+			)
+			mesh_list[[i]] = rayvertex::construct_mesh(
+				vertices = chain_mesh$vertices,
+				indices = chain_mesh$indices,
+				normals = flat_normals$normals,
+				norm_indices = flat_normals$norm_indices,
+				texcoords = chain_mesh$texcoords,
+				tex_indices = chain_mesh$tex_indices,
+				material = mesh_material
+			)
+		} else {
+			mesh_list[[i]] = rayvertex::construct_mesh(
+				vertices = chain_mesh$vertices,
+				indices = chain_mesh$indices,
+				texcoords = chain_mesh$texcoords,
+				tex_indices = chain_mesh$tex_indices,
+				material = mesh_material
+			)
+		}
+	}
+	if (!pathtrace && nrow(visible_bonds) > 0L) {
+		mesh_list = c(
+			mesh_list,
+			build_ribbon_bond_meshes(
+				atoms = visible_atoms,
+				bonds = visible_bonds,
+				center_shift = center_shift,
+				scale = scale,
+				offset = offset,
+				material_vertex = material_vertex
+			)
+		)
+	}
+	if (!pathtrace && nrow(visible_atoms) > 0L) {
+		mesh_list = c(
+			mesh_list,
+			build_ribbon_atom_meshes(
+				atoms = visible_atoms,
+				center_shift = center_shift,
+				scale = scale,
+				offset = offset,
+				material_vertex = material_vertex
+			)
 		)
 	}
 
@@ -145,12 +233,448 @@ generate_ribbon_scene = function(
 		return(mesh_scene)
 	}
 
-	return(rayrender::raymesh_model(
+	ribbon_scene = rayrender::raymesh_model(
 		mesh_scene,
 		override_material = FALSE,
 		calculate_consistent_normals = FALSE,
 		recalculate_normals = FALSE
+	)
+	if (nrow(visible_bonds) > 0L) {
+		ribbon_scene = rayrender::add_object(
+			ribbon_scene,
+			build_ribbon_bond_objects(
+				atoms = visible_atoms,
+				bonds = visible_bonds,
+				center_shift = center_shift,
+				scale = scale,
+				offset = offset,
+				material = material
+			)
+		)
+	}
+	if (nrow(visible_atoms) > 0L) {
+		ribbon_scene = rayrender::add_object(
+			ribbon_scene,
+			build_ribbon_atom_objects(
+				atoms = visible_atoms,
+				center_shift = center_shift,
+				scale = scale,
+				offset = offset,
+				material = material
+			)
+		)
+	}
+
+	return(ribbon_scene)
+}
+
+#' @keywords internal
+build_flat_mesh_normals = function(
+	vertices,
+	indices,
+	fallback_normals = NULL,
+	fallback_norm_indices = NULL
+) {
+	if (!is.matrix(vertices) || ncol(vertices) != 3L) {
+		stop("build_flat_mesh_normals() requires an n x 3 vertex matrix")
+	}
+	if (!is.matrix(indices) || ncol(indices) != 3L) {
+		stop("build_flat_mesh_normals() requires an m x 3 index matrix")
+	}
+	if (is.null(fallback_normals) != is.null(fallback_norm_indices)) {
+		stop(
+			"build_flat_mesh_normals() requires fallback_normals and fallback_norm_indices together"
+		)
+	}
+	if (!is.null(fallback_normals)) {
+		if (!is.matrix(fallback_normals) || ncol(fallback_normals) != 3L) {
+			stop("build_flat_mesh_normals() fallback_normals must be an n x 3 matrix")
+		}
+		if (!is.matrix(fallback_norm_indices) || ncol(fallback_norm_indices) != 3L) {
+			stop("build_flat_mesh_normals() fallback_norm_indices must be an m x 3 matrix")
+		}
+		if (nrow(fallback_norm_indices) != nrow(indices)) {
+			stop("build_flat_mesh_normals() fallback_norm_indices must match indices")
+		}
+	}
+
+	triangle_count = nrow(indices)
+	normals = matrix(NA_real_, nrow = triangle_count, ncol = 3L)
+	norm_indices = matrix(rep(seq_len(triangle_count) - 1L, each = 3L), ncol = 3L, byrow = TRUE)
+	previous_normal = NULL
+
+	for (triangle_index in seq_len(triangle_count)) {
+		vertex_ids = indices[triangle_index, ] + 1L
+		edge1 = vertices[vertex_ids[2], ] - vertices[vertex_ids[1], ]
+		edge2 = vertices[vertex_ids[3], ] - vertices[vertex_ids[1], ]
+		normal = cross(edge1, edge2)
+		normal_length = vector_length(normal)
+
+		if (is.finite(normal_length) && normal_length > 1e-8) {
+			normalized_normal = normal / normal_length
+		} else {
+			normalized_normal = resolve_degenerate_flat_mesh_normal(
+				triangle_index = triangle_index,
+				vertices = vertices,
+				vertex_ids = vertex_ids,
+				fallback_normals = fallback_normals,
+				fallback_norm_indices = fallback_norm_indices,
+				previous_normal = previous_normal
+			)
+		}
+
+		normals[triangle_index, ] = normalized_normal
+		previous_normal = normalized_normal
+	}
+
+	return(list(normals = normals, norm_indices = norm_indices))
+}
+
+#' @keywords internal
+resolve_degenerate_flat_mesh_normal = function(
+	triangle_index,
+	vertices,
+	vertex_ids,
+	fallback_normals = NULL,
+	fallback_norm_indices = NULL,
+	previous_normal = NULL
+) {
+	if (!is.null(fallback_normals)) {
+		fallback_ids = fallback_norm_indices[triangle_index, ] + 1L
+		fallback_normal = colMeans(fallback_normals[fallback_ids, , drop = FALSE])
+		fallback_length = vector_length(fallback_normal)
+		if (is.finite(fallback_length) && fallback_length > 1e-8) {
+			fallback_normal = fallback_normal / fallback_length
+			if (!is.null(previous_normal) && sum(fallback_normal * previous_normal) < 0) {
+				fallback_normal = -fallback_normal
+			}
+			return(fallback_normal)
+		}
+	}
+
+	if (!is.null(previous_normal) && all(is.finite(previous_normal))) {
+		previous_length = vector_length(previous_normal)
+		if (previous_length > 1e-8) {
+			return(previous_normal / previous_length)
+		}
+	}
+
+	triangle_vertices = vertices[vertex_ids, , drop = FALSE]
+	edge_vectors = rbind(
+		triangle_vertices[2, ] - triangle_vertices[1, ],
+		triangle_vertices[3, ] - triangle_vertices[1, ],
+		triangle_vertices[3, ] - triangle_vertices[2, ]
+	)
+	edge_lengths = sqrt(rowSums(edge_vectors^2))
+	if (any(is.finite(edge_lengths) & edge_lengths > 1e-8)) {
+		longest_edge = edge_vectors[which.max(edge_lengths), ]
+		return(stable_perpendicular(longest_edge))
+	}
+
+	return(c(0, 0, 1))
+}
+
+#' @keywords internal
+select_ribbon_display_atoms = function(
+	model,
+	show_hetero_atoms,
+	show_waters
+) {
+	if (!show_hetero_atoms || is.null(model$atoms) || nrow(model$atoms) == 0L) {
+		return(empty_pdb_atoms())
+	}
+
+	atoms = model$atoms[model$atoms$record == "HETATM", , drop = FALSE]
+	if (!show_waters) {
+		atoms = atoms[!is_water_residue_name(atoms$res_name), , drop = FALSE]
+	}
+	return(atoms)
+}
+
+#' @keywords internal
+select_ribbon_display_bonds = function(model, atoms, show_hetero_bonds) {
+	if (
+		!show_hetero_bonds ||
+			nrow(atoms) == 0L ||
+			is.null(model$bonds) ||
+			nrow(model$bonds) == 0L
+	) {
+		return(empty_pdb_bonds())
+	}
+
+	visible_atom_ids = atoms$index
+	bonds = model$bonds[
+		model$bonds$from %in% visible_atom_ids &
+			model$bonds$to %in% visible_atom_ids,
+		,
+		drop = FALSE
+	]
+	if (nrow(bonds) == 0L) {
+		return(empty_pdb_bonds())
+	}
+
+	bonds = data.frame(
+		from = pmin(bonds$from, bonds$to),
+		to = pmax(bonds$from, bonds$to),
+		number = bonds$number,
+		stringsAsFactors = FALSE
+	)
+	bonds = bonds[bonds$from != bonds$to, , drop = FALSE]
+	if (nrow(bonds) == 0L) {
+		return(empty_pdb_bonds())
+	}
+
+	bonds = stats::aggregate(number ~ from + to, data = bonds, FUN = max)
+	bonds = bonds[order(bonds$from, bonds$to), , drop = FALSE]
+	rownames(bonds) = NULL
+	return(bonds)
+}
+
+#' @keywords internal
+is_water_residue_name = function(res_name) {
+	res_name = toupper(trimws(res_name))
+	return(res_name %in% c("HOH", "WAT", "DOD"))
+}
+
+#' @keywords internal
+normalize_atom_element_symbol = function(element) {
+	element = trimws(as.character(element))
+	if (!nzchar(element)) {
+		return("C")
+	}
+	if (nchar(element) == 1L) {
+		return(toupper(element))
+	}
+	return(paste0(
+		toupper(substr(element, 1L, 1L)),
+		tolower(substr(element, 2L, nchar(element)))
 	))
+}
+
+#' @keywords internal
+display_atom_color = function(element) {
+	element = normalize_atom_element_symbol(element)
+	return(PeriodicTable::atomColor(element))
+}
+
+#' @keywords internal
+display_atom_radius = function(element) {
+	element = normalize_atom_element_symbol(element)
+	return((PeriodicTable::mass(element) / 14)^(1 / 3) / 2)
+}
+
+#' @keywords internal
+ribbon_display_atom_radius = function(element, scale = 0.45) {
+	if (
+		length(scale) != 1L ||
+			!is.finite(scale) ||
+			scale <= 0
+	) {
+		stop("ribbon_display_atom_radius() scale must be a positive number")
+	}
+	return(display_atom_radius(element) * scale)
+}
+
+#' @keywords internal
+ribbon_display_bond_radius = function(element1, element2, scale = 0.6) {
+	if (
+		length(scale) != 1L ||
+			!is.finite(scale) ||
+			scale <= 0
+	) {
+		stop("ribbon_display_bond_radius() scale must be a positive number")
+	}
+	return(min(
+		ribbon_display_atom_radius(element1),
+		ribbon_display_atom_radius(element2)
+	) * scale)
+}
+
+#' @keywords internal
+transform_scene_points = function(points, center_shift, scale, offset) {
+	points = sweep(points, 2, center_shift, FUN = "-")
+	points = points * scale
+	points = sweep(points, 2, offset, FUN = "+")
+	return(points)
+}
+
+#' @keywords internal
+build_ribbon_bond_meshes = function(
+	atoms,
+	bonds,
+	center_shift,
+	scale,
+	offset,
+	material_vertex
+) {
+	if (nrow(bonds) == 0L) {
+		return(list())
+	}
+
+	positions = transform_scene_points(
+		points = as.matrix(atoms[, c("x", "y", "z"), drop = FALSE]),
+		center_shift = center_shift,
+		scale = scale,
+		offset = offset
+	)
+	rownames(positions) = as.character(atoms$index)
+
+	meshes = vector(mode = "list", length = nrow(bonds) * 2L)
+	counter = 1L
+	for (i in seq_len(nrow(bonds))) {
+		from_atom = atoms[match(bonds$from[i], atoms$index), , drop = FALSE]
+		to_atom = atoms[match(bonds$to[i], atoms$index), , drop = FALSE]
+		start = positions[as.character(bonds$from[i]), ]
+		end = positions[as.character(bonds$to[i]), ]
+		midpoint = (start + end) / 2
+		radius = ribbon_display_bond_radius(from_atom$type, to_atom$type)
+
+		from_material = material_vertex
+		from_color = display_atom_color(from_atom$type)
+		from_material$diffuse = convert_color(from_color)
+		from_material$ambient = convert_color(from_color)
+		from_material$ambient_intensity = max(0.3, from_material$ambient_intensity)
+		meshes[[counter]] = rayvertex::segment_mesh(
+			start = start,
+			end = midpoint,
+			radius = radius,
+			material = from_material
+		)
+		counter = counter + 1L
+
+		to_material = material_vertex
+		to_color = display_atom_color(to_atom$type)
+		to_material$diffuse = convert_color(to_color)
+		to_material$ambient = convert_color(to_color)
+		to_material$ambient_intensity = max(0.3, to_material$ambient_intensity)
+		meshes[[counter]] = rayvertex::segment_mesh(
+			start = midpoint,
+			end = end,
+			radius = radius,
+			material = to_material
+		)
+		counter = counter + 1L
+	}
+
+	return(meshes)
+}
+
+#' @keywords internal
+build_ribbon_atom_meshes = function(
+	atoms,
+	center_shift,
+	scale,
+	offset,
+	material_vertex
+) {
+	if (nrow(atoms) == 0L) {
+		return(list())
+	}
+
+	positions = transform_scene_points(
+		points = as.matrix(atoms[, c("x", "y", "z"), drop = FALSE]),
+		center_shift = center_shift,
+		scale = scale,
+		offset = offset
+	)
+	meshes = vector(mode = "list", length = nrow(atoms))
+	for (i in seq_len(nrow(atoms))) {
+		atom_material = material_vertex
+		atom_color = display_atom_color(atoms$type[i])
+		atom_material$diffuse = convert_color(atom_color)
+		atom_material$ambient = convert_color(atom_color)
+		atom_material$ambient_intensity = max(0.3, atom_material$ambient_intensity)
+		meshes[[i]] = rayvertex::sphere_mesh(
+			position = positions[i, ],
+			radius = ribbon_display_atom_radius(atoms$type[i]),
+			low_poly = FALSE,
+			material = atom_material
+		)
+	}
+
+	return(meshes)
+}
+
+#' @keywords internal
+build_ribbon_bond_objects = function(
+	atoms,
+	bonds,
+	center_shift,
+	scale,
+	offset,
+	material
+) {
+	if (nrow(bonds) == 0L) {
+		return(NULL)
+	}
+
+	positions = transform_scene_points(
+		points = as.matrix(atoms[, c("x", "y", "z"), drop = FALSE]),
+		center_shift = center_shift,
+		scale = scale,
+		offset = offset
+	)
+	rownames(positions) = as.character(atoms$index)
+
+	objects = vector(mode = "list", length = nrow(bonds) * 2L)
+	counter = 1L
+	for (i in seq_len(nrow(bonds))) {
+		from_atom = atoms[match(bonds$from[i], atoms$index), , drop = FALSE]
+		to_atom = atoms[match(bonds$to[i], atoms$index), , drop = FALSE]
+		start = positions[as.character(bonds$from[i]), ]
+		end = positions[as.character(bonds$to[i]), ]
+		midpoint = (start + end) / 2
+		radius = ribbon_display_bond_radius(from_atom$type, to_atom$type)
+
+		objects[[counter]] = rayrender::segment(
+			start = start,
+			end = midpoint,
+			radius = radius,
+			material = material(color = display_atom_color(from_atom$type))
+		)
+		counter = counter + 1L
+		objects[[counter]] = rayrender::segment(
+			start = midpoint,
+			end = end,
+			radius = radius,
+			material = material(color = display_atom_color(to_atom$type))
+		)
+		counter = counter + 1L
+	}
+
+	return(do.call("rbind", objects))
+}
+
+#' @keywords internal
+build_ribbon_atom_objects = function(
+	atoms,
+	center_shift,
+	scale,
+	offset,
+	material
+) {
+	if (nrow(atoms) == 0L) {
+		return(NULL)
+	}
+
+	positions = transform_scene_points(
+		points = as.matrix(atoms[, c("x", "y", "z"), drop = FALSE]),
+		center_shift = center_shift,
+		scale = scale,
+		offset = offset
+	)
+	objects = vector(mode = "list", length = nrow(atoms))
+	for (i in seq_len(nrow(atoms))) {
+		objects[[i]] = rayrender::sphere(
+			x = positions[i, 1],
+			y = positions[i, 2],
+			z = positions[i, 3],
+			radius = ribbon_display_atom_radius(atoms$type[i]),
+			material = material(color = display_atom_color(atoms$type[i]))
+		)
+	}
+
+	return(do.call("rbind", objects))
 }
 
 #' @keywords internal

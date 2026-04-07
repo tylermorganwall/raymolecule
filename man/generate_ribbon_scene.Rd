@@ -20,7 +20,11 @@ generate_ribbon_scene(
   chain_colors = NULL,
   texture = NULL,
   material = rayrender::glossy,
-  material_vertex = rayvertex::material_list(type = "phong")
+  material_vertex = rayvertex::material_list(type = "phong"),
+  show_hetero_atoms = TRUE,
+  show_hetero_bonds = TRUE,
+  show_waters = FALSE,
+  use_vertex_normals = FALSE
 )
 }
 \arguments{
@@ -66,15 +70,30 @@ use when `pathtrace = TRUE`.}
 
 \item{material_vertex}{Default `rayvertex::material_list(type = "phong")`.
 Rayvertex material template to use when `pathtrace = FALSE`.}
+
+\item{show_hetero_atoms}{Default `TRUE`. If `TRUE`, display non-protein
+`HETATM` records as bare spheres alongside the ribbon.}
+
+\item{show_hetero_bonds}{Default `TRUE`. If `TRUE`, display bonds between
+shown hetero atoms as a ball-and-stick overlay alongside the ribbon.}
+
+\item{show_waters}{Default `FALSE`. If `TRUE`, include water `HETATM`
+records when `show_hetero_atoms = TRUE` and `show_hetero_bonds = TRUE`.}
+
+\item{use_vertex_normals}{Default `FALSE`. If `TRUE`, attach the ribbon
+mesh's swept vertex normals. If `FALSE`, raster scenes omit explicit
+normals and pathtraced scenes use flat face normals.}
 }
 \value{
 Rayrender/rayvertex scene containing a ribbon mesh.
 }
 \description{
 Generates a mesh-based protein ribbon from a PDB model parsed with
-[read_pdb()]. The ribbon follows a CA-driven centripetal Catmull-Rom spline,
-uses O atoms to guide orientation, and is emitted as indexed watertight mesh
-data with UV coordinates. Contiguous `SHEET` annotations are rendered with
+[read_pdb()]. Segments with contiguous peptide-plane backbone data are
+rendered with a peptide-plane cartoon sweep, while incomplete backbone
+segments fall back to a CA-driven centripetal Catmull-Rom ribbon. The mesh is
+emitted as indexed watertight geometry with UV coordinates, and eligible
+`SHEET` annotations are rendered with peptide-plane strand profiles and
 tapered C-terminal arrowheads.
 }
 \examples{

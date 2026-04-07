@@ -112,22 +112,178 @@ sample_catmull_rom_chain = function(chain, subdivisions) {
 }
 
 #' @keywords internal
+build_peptide_plane_guides = function(residues) {
+	if (nrow(residues) == 0L) {
+		stop("build_peptide_plane_guides() requires at least one residue")
+	}
+
+	segment_count = nrow(residues) - 1L
+	if (segment_count < 1L) {
+		return(matrix(NA_real_, nrow = 0L, ncol = 3L))
+	}
+
+	segment_guides = matrix(NA_real_, nrow = segment_count, ncol = 3L)
+	previous_guide = NULL
+
+	for (segment_index in seq_len(segment_count)) {
+		if (
+			!residues$has_ca[segment_index] ||
+				!residues$has_ca[segment_index + 1L] ||
+				!residues$has_o[segment_index]
+		) {
+			next
+		}
+
+		forward = c(
+			residues$ca_x[segment_index + 1L] - residues$ca_x[segment_index],
+			residues$ca_y[segment_index + 1L] - residues$ca_y[segment_index],
+			residues$ca_z[segment_index + 1L] - residues$ca_z[segment_index]
+		)
+		guide = c(
+			residues$o_x[segment_index] - residues$ca_x[segment_index],
+			residues$o_y[segment_index] - residues$ca_y[segment_index],
+			residues$o_z[segment_index] - residues$ca_z[segment_index]
+		)
+		projected = project_to_plane(guide, forward)
+		if (vector_length(projected) <= 1e-8) {
+			next
+		}
+
+		projected = normalize_vector(
+			projected,
+			error_message = "Failed to construct peptide-plane ribbon guides"
+		)
+		if (!is.null(previous_guide) && sum(projected * previous_guide) < 0) {
+			projected = -projected
+		}
+
+		segment_guides[segment_index, ] = projected
+		previous_guide = projected
+	}
+
+	return(segment_guides)
+}
+
+#' @keywords internal
+smooth_sheet_control_guides = function(
+	control_guides,
+	residues,
+	kernel = c(1, 4, 6, 4, 1)
+) {
+	if (
+		!is.matrix(control_guides) ||
+			ncol(control_guides) != 3L ||
+			nrow(control_guides) != nrow(residues)
+	) {
+		stop("smooth_sheet_control_guides() requires guides matching the residue table")
+	}
+
+	smoothed = control_guides
+	sheet_runs = find_sheet_runs(residues)
+	if (length(sheet_runs) == 0L) {
+		return(smoothed)
+	}
+
+	kernel = as.numeric(kernel)
+	half_window = as.integer((length(kernel) - 1L) / 2L)
+
+	for (run in sheet_runs) {
+		run_rows = run$start:run$end
+		valid_rows = run_rows[rowSums(is.finite(control_guides[run_rows, , drop = FALSE])) == 3L]
+		if (length(valid_rows) < 3L) {
+			next
+		}
+
+		run_guides = control_guides[valid_rows, , drop = FALSE]
+		for (guide_index in 2:nrow(run_guides)) {
+			if (sum(run_guides[guide_index, ] * run_guides[guide_index - 1L, ]) < 0) {
+				run_guides[guide_index, ] = -run_guides[guide_index, ]
+			}
+		}
+
+		for (guide_index in seq_len(nrow(run_guides))) {
+			window_indices = pmax(
+				1L,
+				pmin(nrow(run_guides), (guide_index - half_window):(guide_index + half_window))
+			)
+			window_guides = run_guides[window_indices, , drop = FALSE]
+			averaged = colSums(
+				window_guides *
+					matrix(kernel, nrow = nrow(window_guides), ncol = 3L)
+			) / sum(kernel)
+			if (vector_length(averaged) <= 1e-8) {
+				next
+			}
+			smoothed[valid_rows[guide_index], ] = normalize_vector(
+				averaged,
+				error_message = "Failed to smooth sheet ribbon guides"
+			)
+		}
+	}
+
+	return(smoothed)
+}
+
+#' @keywords internal
+build_control_guides = function(residues) {
+	if (nrow(residues) == 0L) {
+		stop("build_control_guides() requires at least one residue")
+	}
+
+	control_guides = matrix(NA_real_, nrow = nrow(residues), ncol = 3L)
+	segment_guides = build_peptide_plane_guides(residues)
+
+	if (nrow(segment_guides) > 0L) {
+		for (residue_index in seq_len(nrow(residues))) {
+			candidate_rows = c(residue_index - 1L, residue_index)
+			candidate_rows = candidate_rows[candidate_rows >= 1L & candidate_rows <= nrow(segment_guides)]
+			candidate_guides = segment_guides[candidate_rows, , drop = FALSE]
+			valid_candidates = rowSums(is.finite(candidate_guides)) == 3L
+			if (!any(valid_candidates)) {
+				next
+			}
+			averaged = colMeans(candidate_guides[valid_candidates, , drop = FALSE])
+			if (vector_length(averaged) <= 1e-8) {
+				next
+			}
+			control_guides[residue_index, ] = normalize_vector(
+				averaged,
+				error_message = "Failed to construct residue ribbon guides"
+			)
+		}
+	}
+
+	fallback_rows = which(
+		rowSums(is.finite(control_guides)) != 3L &
+			residues$has_ca &
+			residues$has_o
+	)
+	if (length(fallback_rows) > 0L) {
+		raw_guides = cbind(
+			residues$o_x[fallback_rows] - residues$ca_x[fallback_rows],
+			residues$o_y[fallback_rows] - residues$ca_y[fallback_rows],
+			residues$o_z[fallback_rows] - residues$ca_z[fallback_rows]
+		)
+		for (row_index in seq_len(nrow(raw_guides))) {
+			control_guides[fallback_rows[row_index], ] = normalize_vector(
+				raw_guides[row_index, ],
+				error_message = "Failed to construct fallback residue ribbon guides"
+			)
+		}
+	}
+
+	return(smooth_sheet_control_guides(control_guides, residues))
+}
+
+#' @keywords internal
 build_residue_guides = function(residues, residue_parameter) {
 	if (nrow(residues) == 0L) {
 		stop("build_residue_guides() requires at least one residue")
 	}
 
 	guides = matrix(NA_real_, nrow = length(residue_parameter), ncol = 3L)
-	control_guides = matrix(NA_real_, nrow = nrow(residues), ncol = 3L)
-	valid_guides = residues$has_ca & residues$has_o
-
-	if (any(valid_guides)) {
-		control_guides[valid_guides, ] = cbind(
-			residues$o_x[valid_guides] - residues$ca_x[valid_guides],
-			residues$o_y[valid_guides] - residues$ca_y[valid_guides],
-			residues$o_z[valid_guides] - residues$ca_z[valid_guides]
-		)
-	}
+	control_guides = build_control_guides(residues)
+	valid_guides = rowSums(is.finite(control_guides)) == 3L
 
 	tolerance = 1e-10
 	for (i in seq_along(residue_parameter)) {
@@ -166,7 +322,8 @@ build_rotation_minimizing_frame = function(
 	tangent,
 	guides = NULL,
 	chain_id = "",
-	residue_parameter = seq_len(nrow(centerline)) - 1
+	residue_parameter = seq_len(nrow(centerline)) - 1,
+	residues = NULL
 ) {
 	if (!is.matrix(centerline) || ncol(centerline) != 3L) {
 		stop(
@@ -206,7 +363,8 @@ build_rotation_minimizing_frame = function(
 		transport_normal = transport_frame$normal,
 		transport_binormal = transport_frame$binormal,
 		arc_length = transport_frame$arc_length,
-		residue_parameter = residue_parameter
+		residue_parameter = residue_parameter,
+		residues = residues
 	)
 
 	normal = matrix(NA_real_, nrow = sample_count, ncol = 3L)
@@ -335,7 +493,8 @@ compute_guide_twist_angles = function(
 	transport_normal,
 	transport_binormal,
 	arc_length,
-	residue_parameter
+	residue_parameter,
+	residues = NULL
 ) {
 	sample_count = nrow(tangent)
 	tolerance = 1e-8
@@ -381,12 +540,28 @@ compute_guide_twist_angles = function(
 		return(rep(0, sample_count))
 	}
 
-  knot_positions = arc_length[knot_indices[valid_knots]]
-  return(interpolate_twist_angles(
-    positions = arc_length,
-    knot_positions = knot_positions,
-    knot_angles = knot_angles[valid_knots]
-  ))
+	knot_indices = knot_indices[valid_knots]
+	knot_angles = knot_angles[valid_knots]
+	knot_positions = arc_length[knot_indices]
+
+	if (!is.null(residues)) {
+		knot_residue_index = pmin(
+			nrow(residues),
+			pmax(1L, as.integer(round(residue_parameter[knot_indices])) + 1L)
+		)
+		knot_angles = smooth_sheet_twist_knots(
+			knot_positions = knot_positions,
+			knot_angles = knot_angles,
+			knot_residue_index = knot_residue_index,
+			residues = residues
+		)
+	}
+
+	return(interpolate_twist_angles(
+		positions = arc_length,
+		knot_positions = knot_positions,
+		knot_angles = knot_angles
+	))
 }
 
 #' @keywords internal
@@ -421,6 +596,80 @@ choose_continuous_axial_twist_angle = function(angle, previous_angle = NULL) {
 	}
 
 	return(directed_angle)
+}
+
+#' @keywords internal
+smooth_sheet_twist_knots = function(
+	knot_positions,
+	knot_angles,
+	knot_residue_index,
+	residues,
+	lambda = 40
+) {
+	if (
+		length(knot_positions) != length(knot_angles) ||
+			length(knot_angles) != length(knot_residue_index)
+	) {
+		stop("smooth_sheet_twist_knots() requires matching knot vectors")
+	}
+	if (!is.data.frame(residues)) {
+		stop("smooth_sheet_twist_knots() requires a residue data frame")
+	}
+	if (length(knot_angles) < 3L || nrow(residues) == 0L) {
+		return(knot_angles)
+	}
+
+	ss_class = residues$ss_class[knot_residue_index]
+	sheet_keys = rep("", length(knot_angles))
+	sheet_mask = ss_class == "sheet"
+
+	if (!any(sheet_mask)) {
+		return(knot_angles)
+	}
+
+	sheet_strand = if ("sheet_strand" %in% names(residues)) {
+		residues$sheet_strand[knot_residue_index]
+	} else {
+		rep(NA_integer_, length(knot_angles))
+	}
+	sheet_keys[sheet_mask] = paste(
+		residues$sheet_id[knot_residue_index][sheet_mask],
+		sheet_strand[sheet_mask],
+		sep = ":"
+	)
+
+	smoothed = knot_angles
+	index = 1L
+	while (index <= length(sheet_keys)) {
+		if (!nzchar(sheet_keys[index]) || !is.finite(smoothed[index])) {
+			index = index + 1L
+			next
+		}
+
+		run_end = index
+		while (
+			run_end < length(sheet_keys) &&
+				identical(sheet_keys[run_end + 1L], sheet_keys[index]) &&
+				is.finite(smoothed[run_end + 1L])
+		) {
+			run_end = run_end + 1L
+		}
+
+		run_length = run_end - index + 1L
+		if (run_length >= 4L) {
+			smoothed[index:run_end] = smooth_twist_angles(
+				positions = knot_positions[index:run_end],
+				angles = smoothed[index:run_end],
+				lambda = lambda
+			)
+		} else if (run_length == 3L) {
+			smoothed[index + 1L] = mean(smoothed[index:run_end])
+		}
+
+		index = run_end + 1L
+	}
+
+	return(smoothed)
 }
 
 #' @keywords internal
@@ -511,78 +760,6 @@ rotate_frame_about_tangent = function(tangent, normal, binormal, angle) {
 }
 
 #' @keywords internal
-build_ribbon_dimensions = function(
-	residues,
-	residue_parameter,
-	ribbon_width,
-	ribbon_thickness,
-	arrow_length = 2,
-	arrow_width_scale = 1.75,
-	arrow_tip_scale = 0.15,
-	arrow_recovery_length = 0.75,
-	arrow_base_fraction = 0.65
-) {
-	if (!is.data.frame(residues)) {
-		stop("build_ribbon_dimensions() requires a residue data frame")
-	}
-	if (length(residue_parameter) == 0L) {
-		stop("build_ribbon_dimensions() requires sampled residue parameters")
-	}
-
-	widths = rep(ribbon_width, length(residue_parameter))
-	thicknesses = rep(ribbon_thickness, length(residue_parameter))
-	sheet_runs = find_sheet_runs(residues)
-
-	if (length(sheet_runs) == 0L) {
-		return(list(width = widths, thickness = thicknesses))
-	}
-
-		max_parameter = max(residue_parameter)
-	for (run in sheet_runs) {
-		tip_parameter = run$end - 1
-		base_parameter = max(run$start - 1, tip_parameter - arrow_length)
-		head_extent = tip_parameter - base_parameter
-		if (head_extent <= 1e-8) {
-			tip_mask = abs(residue_parameter - tip_parameter) <= 1e-8
-			widths[tip_mask] = ribbon_width * arrow_tip_scale
-		} else {
-			head_mask =
-				residue_parameter >= base_parameter &
-				residue_parameter <= tip_parameter
-			u = (residue_parameter[head_mask] - base_parameter) / head_extent
-			head_scale = numeric(length(u))
-
-			leading = u <= arrow_base_fraction
-			if (any(leading)) {
-				head_scale[leading] = 1 + (arrow_width_scale - 1) *
-					smoothstep01(u[leading] / arrow_base_fraction)
-			}
-			if (any(!leading)) {
-				trailing_u = (u[!leading] - arrow_base_fraction) / (1 - arrow_base_fraction)
-				head_scale[!leading] = arrow_width_scale +
-					(arrow_tip_scale - arrow_width_scale) * smoothstep01(trailing_u)
-			}
-				widths[head_mask] = ribbon_width * head_scale
-			}
-
-			recovery_end = min(max_parameter, tip_parameter + arrow_recovery_length)
-			if (recovery_end > tip_parameter) {
-			recovery_mask =
-				residue_parameter > tip_parameter &
-				residue_parameter <= recovery_end
-			recovery_u =
-				(residue_parameter[recovery_mask] - tip_parameter) /
-				(recovery_end - tip_parameter)
-			recovery_scale = arrow_tip_scale +
-				(1 - arrow_tip_scale) * smoothstep01(recovery_u)
-				widths[recovery_mask] = ribbon_width * recovery_scale
-			}
-		}
-
-	return(list(width = widths, thickness = thicknesses))
-}
-
-#' @keywords internal
 find_sheet_runs = function(residues) {
 	if (nrow(residues) == 0L) {
 		return(list())
@@ -643,6 +820,657 @@ smoothstep01 = function(x) {
 }
 
 #' @keywords internal
+build_peptide_planes = function(residues) {
+	if (!is.data.frame(residues)) {
+		stop("build_peptide_planes() requires a residue data frame")
+	}
+	if (nrow(residues) < 2L) {
+		stop("build_peptide_planes() requires at least two residues")
+	}
+
+	plane_count = nrow(residues) - 1L
+	position = matrix(NA_real_, nrow = plane_count, ncol = 3L)
+	side = matrix(NA_real_, nrow = plane_count, ncol = 3L)
+	normal = matrix(NA_real_, nrow = plane_count, ncol = 3L)
+	forward = matrix(NA_real_, nrow = plane_count, ncol = 3L)
+	residue1_type = character(plane_count)
+	residue2_type = character(plane_count)
+	residue3_type = character(plane_count)
+
+	previous_side = NULL
+	for (plane_index in seq_len(plane_count)) {
+		if (
+			!residues$has_ca[plane_index] ||
+				!residues$has_ca[plane_index + 1L] ||
+				!residues$has_o[plane_index]
+		) {
+			stop("Peptide-plane ribbon generation requires contiguous CA and O atoms")
+		}
+
+		ca1 = c(
+			residues$ca_x[plane_index],
+			residues$ca_y[plane_index],
+			residues$ca_z[plane_index]
+		)
+		ca2 = c(
+			residues$ca_x[plane_index + 1L],
+			residues$ca_y[plane_index + 1L],
+			residues$ca_z[plane_index + 1L]
+		)
+		o1 = c(
+			residues$o_x[plane_index],
+			residues$o_y[plane_index],
+			residues$o_z[plane_index]
+		)
+
+		plane_forward = normalize_vector(
+			ca2 - ca1,
+			error_message = "Failed to construct peptide-plane forward vectors"
+		)
+		guide = project_to_plane(o1 - ca1, plane_forward)
+		if (vector_length(guide) <= 1e-8) {
+			stop("Peptide-plane ribbon generation requires non-collinear CA and O atoms")
+		}
+		plane_side = normalize_vector(
+			guide,
+			error_message = "Failed to construct peptide-plane side vectors"
+		)
+		plane_normal = normalize_vector(
+			cross(plane_forward, plane_side),
+			error_message = "Failed to construct peptide-plane normals"
+		)
+
+		if (!is.null(previous_side) && sum(plane_side * previous_side) < 0) {
+			plane_side = -plane_side
+			plane_normal = -plane_normal
+		}
+
+		position[plane_index, ] = (ca1 + ca2) / 2
+		side[plane_index, ] = plane_side
+		normal[plane_index, ] = plane_normal
+		forward[plane_index, ] = plane_forward
+		residue1_type[plane_index] = residues$ss_class[plane_index]
+		residue2_type[plane_index] = residues$ss_class[min(plane_index + 1L, nrow(residues))]
+		residue3_type[plane_index] = residues$ss_class[min(plane_index + 2L, nrow(residues))]
+		previous_side = plane_side
+	}
+
+	return(list(
+		position = position,
+		side = side,
+		normal = normal,
+		forward = forward,
+		residue1_type = residue1_type,
+		residue2_type = residue2_type,
+		residue3_type = residue3_type
+	))
+}
+
+#' @keywords internal
+ss_class_to_ribbon_type = function(ss_class) {
+	if (identical(ss_class, "sheet")) {
+		return("strand")
+	}
+	if (identical(ss_class, "helix")) {
+		return("helix")
+	}
+	return("coil")
+}
+
+#' @keywords internal
+transition_ribbon_types = function(planes, plane_index) {
+	type1 = ss_class_to_ribbon_type(planes$residue2_type[plane_index])
+	type2 = type1
+	type0 = ss_class_to_ribbon_type(planes$residue1_type[plane_index])
+	type3 = ss_class_to_ribbon_type(planes$residue3_type[plane_index])
+	type_rank = c(coil = 1L, helix = 2L, strand = 3L)
+
+	if (type_rank[[type1]] > type_rank[[type0]] && identical(type1, type3)) {
+		type1 = type0
+	}
+	if (type_rank[[ss_class_to_ribbon_type(planes$residue2_type[plane_index])]] > type_rank[[type3]] &&
+		identical(type0, ss_class_to_ribbon_type(planes$residue2_type[plane_index]))) {
+		type2 = type3
+	}
+
+	return(list(type0 = type0, type1 = type1, type2 = type2))
+}
+
+#' @keywords internal
+ellipse_profile_2d = function(n, width, height) {
+	theta = seq(0, 2 * pi, length.out = n + 1L)
+	theta = theta[-length(theta)] + pi / 4
+	return(canonicalize_profile_phase(cbind(
+		cos(theta) * width / 2,
+		sin(theta) * height / 2
+	)))
+}
+
+#' @keywords internal
+rectangle_profile_2d = function(n, width, height) {
+	half_width = width / 2
+	half_height = height / 2
+	counts = rep(floor(n / 4), 4L)
+	remainder = n - sum(counts)
+	if (remainder > 0L) {
+		counts[seq_len(remainder)] = counts[seq_len(remainder)] + 1L
+	}
+
+	corners = rbind(
+		c(half_width, half_height),
+		c(-half_width, half_height),
+		c(-half_width, -half_height),
+		c(half_width, -half_height)
+	)
+	vertices = matrix(NA_real_, nrow = n, ncol = 2L)
+	vertex_index = 1L
+	for (segment_index in seq_len(4L)) {
+		count = counts[segment_index]
+		start = corners[segment_index, ]
+		end = corners[if (segment_index == 4L) 1L else segment_index + 1L, ]
+		t_values = seq(0, 1, length.out = count + 1L)[seq_len(count)]
+		for (t in t_values) {
+			vertices[vertex_index, ] = (1 - t) * start + t * end
+			vertex_index = vertex_index + 1L
+		}
+	}
+	return(canonicalize_profile_phase(vertices))
+}
+
+#' @keywords internal
+rounded_rectangle_profile_2d = function(n, width, height) {
+	return(canonicalize_profile_phase(ribbon_cross_section_profile(
+		ribbon_width = width,
+		ribbon_thickness = height,
+		cross_section_resolution = n,
+		shape_exponent = 4
+	)$vertices))
+}
+
+#' @keywords internal
+canonicalize_profile_phase = function(profile_vertices) {
+	if (!is.matrix(profile_vertices) || ncol(profile_vertices) != 2L) {
+		stop("canonicalize_profile_phase() requires an n x 2 profile matrix")
+	}
+
+	start_scores = profile_vertices[, 1] + profile_vertices[, 2]
+	start_index = which.max(start_scores)
+	return(profile_vertices[c(start_index:nrow(profile_vertices), seq_len(start_index - 1L)), , drop = FALSE])
+}
+
+#' @keywords internal
+ribbon_segment_profiles = function(
+	planes,
+	plane_index,
+	cross_section_resolution,
+	ribbon_width,
+	ribbon_thickness
+) {
+	types = transition_ribbon_types(planes, plane_index)
+	type0 = types$type0
+	type1 = types$type1
+	type2 = types$type2
+
+	arrow_body_width = ribbon_width
+	arrow_head_width = ribbon_width * 1.5
+	arrow_height = max(ribbon_thickness * 1.75, ribbon_width * 0.18)
+	arrow_tip_width = max(ribbon_width * 0.02, 1e-3)
+	tube_size = max(ribbon_thickness * 2.25, ribbon_width * 0.32)
+
+	make_profile = function(type, width_override = NULL) {
+		if (identical(type, "strand")) {
+			return(rectangle_profile_2d(
+				cross_section_resolution,
+				if (is.null(width_override)) arrow_body_width else width_override,
+				arrow_height
+			))
+		}
+		if (identical(type, "helix")) {
+			return(rounded_rectangle_profile_2d(
+				cross_section_resolution,
+				ribbon_width,
+				ribbon_thickness
+			))
+		}
+		return(ellipse_profile_2d(cross_section_resolution, tube_size, tube_size))
+	}
+	body_profile = make_profile("strand")
+	head_profile = make_profile("strand", width_override = arrow_head_width)
+	tip_profile = make_profile("strand", width_override = arrow_tip_width)
+
+	if (identical(type0, "strand") && !identical(type1, "strand")) {
+		profile1 = tip_profile
+	} else if (identical(type1, "strand")) {
+		if (identical(type2, "strand")) {
+			profile1 = body_profile
+		} else {
+			profile1 = body_profile
+		}
+	} else if (identical(type1, "helix")) {
+		profile1 = make_profile("helix")
+	} else {
+		profile1 = make_profile("coil")
+	}
+
+	if (identical(type2, "strand")) {
+		profile2 = body_profile
+	} else if (identical(type2, "helix")) {
+		profile2 = make_profile("helix")
+	} else {
+		profile2 = make_profile("coil")
+	}
+
+	if (identical(type1, "strand") && !identical(type2, "strand")) {
+		profile2 = tip_profile
+	}
+
+	return(list(
+		start = profile1,
+		end = profile2,
+		body = body_profile,
+		head = head_profile,
+		tip = tip_profile,
+		type0 = type0,
+		type1 = type1,
+		type2 = type2
+	))
+}
+
+#' @keywords internal
+segment_profile_fraction = function(type0, type1, type2, fraction) {
+	if (identical(type1, "strand") && !identical(type2, "strand")) {
+		return(fraction)
+	}
+	if (identical(type0, "strand") && !identical(type1, "strand")) {
+		return(sqrt(1 - (1 - fraction)^2))
+	}
+	return(smoothstep01(fraction))
+}
+
+#' @keywords internal
+interpolate_segment_profile = function(profiles, fraction) {
+	if (identical(profiles$type1, "strand") && !identical(profiles$type2, "strand")) {
+		base_step = strand_arrow_base_step()
+
+		if (fraction < base_step) {
+			return(profiles$body)
+		}
+		u = (fraction - base_step) / (1 - base_step)
+		u = pmax(0, pmin(1, u))
+		return((1 - u) * profiles$head + u * profiles$tip)
+	}
+
+	profile_fraction = segment_profile_fraction(
+		type0 = profiles$type0,
+		type1 = profiles$type1,
+		type2 = profiles$type2,
+		fraction = fraction
+	)
+	return((1 - profile_fraction) * profiles$start + profile_fraction * profiles$end)
+}
+
+#' @keywords internal
+strand_arrow_base_step = function() {
+	return(0.001)
+}
+
+#' @keywords internal
+segment_sample_fractions = function(profiles, subdivisions, include_endpoint = TRUE) {
+	fractions = seq(0, 1, length.out = subdivisions + 1L)
+	if (!include_endpoint) {
+		fractions = fractions[-length(fractions)]
+	}
+	if (identical(profiles$type1, "strand") && !identical(profiles$type2, "strand")) {
+		fractions = sort(unique(c(fractions, strand_arrow_base_step())))
+	}
+	return(fractions)
+}
+
+#' @keywords internal
+bspline_basis = function(t) {
+	return(c(
+		(-t^3 + 3 * t^2 - 3 * t + 1) / 6,
+		(3 * t^3 - 6 * t^2 + 4) / 6,
+		(-3 * t^3 + 3 * t^2 + 3 * t + 1) / 6,
+		t^3 / 6
+	))
+}
+
+#' @keywords internal
+bspline_basis_derivative = function(t) {
+	return(c(
+		(-3 * t^2 + 6 * t - 3) / 6,
+		(9 * t^2 - 12 * t) / 6,
+		(-9 * t^2 + 6 * t + 3) / 6,
+		(3 * t^2) / 6
+	))
+}
+
+#' @keywords internal
+bspline_point = function(control_points, fraction) {
+	basis = bspline_basis(fraction)
+	return(drop(basis %*% control_points))
+}
+
+#' @keywords internal
+bspline_derivative_point = function(control_points, fraction) {
+	basis = bspline_basis_derivative(fraction)
+	return(drop(basis %*% control_points))
+}
+
+#' @keywords internal
+profile_perimeter_fraction = function(profile_vertices) {
+	edge_vectors = profile_vertices[c(2:nrow(profile_vertices), 1L), , drop = FALSE] -
+		profile_vertices
+	edge_lengths = sqrt(rowSums(edge_vectors^2))
+	perimeter = sum(edge_lengths)
+	if (!is.finite(perimeter) || perimeter <= 1e-8) {
+		return(seq(0, 1, length.out = nrow(profile_vertices) + 1L)[seq_len(nrow(profile_vertices))])
+	}
+	cumulative = c(0, cumsum(edge_lengths))
+	return(cumulative[seq_len(nrow(profile_vertices))] / perimeter)
+}
+
+#' @keywords internal
+profile_vertex_normals_2d = function(profile_vertices) {
+	previous_index = c(nrow(profile_vertices), seq_len(nrow(profile_vertices) - 1L))
+	next_index = c(2:nrow(profile_vertices), 1L)
+	normals = matrix(NA_real_, nrow = nrow(profile_vertices), ncol = 2L)
+
+	for (i in seq_len(nrow(profile_vertices))) {
+		incoming = profile_vertices[i, ] - profile_vertices[previous_index[i], ]
+		outgoing = profile_vertices[next_index[i], ] - profile_vertices[i, ]
+		incoming_length = sqrt(sum(incoming * incoming))
+		outgoing_length = sqrt(sum(outgoing * outgoing))
+
+		if (incoming_length <= 1e-8 && outgoing_length <= 1e-8) {
+			reference = profile_vertices[i, ]
+			if (sqrt(sum(reference * reference)) <= 1e-8) {
+				normals[i, ] = c(1, 0)
+			} else {
+				normals[i, ] = reference / sqrt(sum(reference * reference))
+			}
+			next
+		}
+
+		incoming_normal = if (incoming_length <= 1e-8) {
+			c(0, 0)
+		} else {
+			c(incoming[2], -incoming[1]) / incoming_length
+		}
+		outgoing_normal = if (outgoing_length <= 1e-8) {
+			c(0, 0)
+		} else {
+			c(outgoing[2], -outgoing[1]) / outgoing_length
+		}
+		combined = incoming_normal + outgoing_normal
+		if (sqrt(sum(combined * combined)) <= 1e-8) {
+			combined = if (outgoing_length > 1e-8) outgoing_normal else incoming_normal
+		}
+		normals[i, ] = combined / sqrt(sum(combined * combined))
+	}
+
+	return(normals)
+}
+
+#' @keywords internal
+build_peptide_surface_chain_mesh = function(
+	residues,
+	ribbon_width,
+	ribbon_thickness,
+	cross_section_resolution,
+	subdivisions,
+	chain_id,
+	chain_index
+) {
+	planes = build_peptide_planes(residues)
+	plane_count = nrow(planes$position)
+	if (plane_count < 2L) {
+		stop("build_peptide_surface_chain_mesh() requires at least two peptide planes")
+	}
+
+	segment_count = plane_count - 1L
+	segment_profiles = vector(mode = "list", length = segment_count)
+	segment_fraction_list = vector(mode = "list", length = segment_count)
+	for (segment_index in seq_len(segment_count)) {
+		segment_profiles[[segment_index]] = ribbon_segment_profiles(
+			planes = planes,
+			plane_index = segment_index,
+			cross_section_resolution = cross_section_resolution,
+			ribbon_width = ribbon_width,
+			ribbon_thickness = ribbon_thickness
+		)
+		segment_fraction_list[[segment_index]] = segment_sample_fractions(
+			profiles = segment_profiles[[segment_index]],
+			subdivisions = subdivisions,
+			include_endpoint = segment_index == segment_count
+		)
+	}
+	ring_count = sum(vapply(segment_fraction_list, length, integer(1)))
+	ring_size = cross_section_resolution
+	side_vertex_count = ring_count * ring_size
+
+	vertices = matrix(NA_real_, nrow = side_vertex_count + 2L, ncol = 3L)
+	normals = matrix(NA_real_, nrow = side_vertex_count + 2L, ncol = 3L)
+	texcoords = matrix(NA_real_, nrow = ring_count * (ring_size + 1L) + 2L, ncol = 2L)
+	centerline = matrix(NA_real_, nrow = ring_count, ncol = 3L)
+	tangent = matrix(NA_real_, nrow = ring_count, ncol = 3L)
+	normal_axis = matrix(NA_real_, nrow = ring_count, ncol = 3L)
+	binormal_axis = matrix(NA_real_, nrow = ring_count, ncol = 3L)
+	residue_parameter = numeric(ring_count)
+	sampled_width = numeric(ring_count)
+	sampled_thickness = numeric(ring_count)
+	profile_kind = character(ring_count)
+	ring_v = vector(mode = "list", length = ring_count)
+
+	previous_side = NULL
+	ring_counter = 1L
+	for (segment_index in seq_len(segment_count)) {
+		control_rows = pmax(
+			1L,
+			pmin(plane_count, c(
+				segment_index - 1L,
+				segment_index,
+				segment_index + 1L,
+				segment_index + 2L
+			))
+		)
+		position_controls = planes$position[control_rows, , drop = FALSE]
+		side_controls = planes$side[control_rows, , drop = FALSE]
+		normal_controls = planes$normal[control_rows, , drop = FALSE]
+		profiles = segment_profiles[[segment_index]]
+		s_values = segment_fraction_list[[segment_index]]
+
+		for (fraction in s_values) {
+			profile_vertices = interpolate_segment_profile(
+				profiles = profiles,
+				fraction = fraction
+			)
+			profile_normals = profile_vertex_normals_2d(profile_vertices)
+			current_center = bspline_point(position_controls, fraction)
+			current_tangent = normalize_vector(
+				bspline_derivative_point(position_controls, fraction),
+				error_message = "Peptide-plane ribbon sampling produced a zero tangent vector"
+			)
+			side_seed = project_to_plane(
+				bspline_point(side_controls, fraction),
+				current_tangent
+			)
+			if (vector_length(side_seed) <= 1e-8) {
+				side_seed = stable_perpendicular(current_tangent)
+			}
+			current_side = normalize_vector(
+				side_seed,
+				error_message = "Failed to construct peptide-plane ribbon side vectors"
+			)
+			if (!is.null(previous_side) && sum(current_side * previous_side) < 0) {
+				current_side = -current_side
+			}
+
+			normal_seed = project_to_plane(
+				bspline_point(normal_controls, fraction),
+				current_tangent
+			)
+			current_binormal = cross(current_tangent, current_side)
+			if (vector_length(current_binormal) <= 1e-8) {
+				stop("Failed to construct peptide-plane ribbon normals")
+			}
+			current_binormal = normalize_vector(
+				current_binormal,
+				error_message = "Failed to construct peptide-plane ribbon normals"
+			)
+			if (vector_length(normal_seed) > 1e-8 && sum(normal_seed * current_binormal) < 0) {
+				current_binormal = -current_binormal
+			}
+			current_side = normalize_vector(
+				cross(current_binormal, current_tangent),
+				error_message = "Failed to orthogonalize peptide-plane ribbon axes"
+			)
+			previous_side = current_side
+
+			vertex_rows = ((ring_counter - 1L) * ring_size + 1L):(ring_counter * ring_size)
+			ring_vertices = matrix(NA_real_, nrow = ring_size, ncol = 3L)
+			ring_vertices =
+				matrix(
+					rep(current_center, each = ring_size),
+					ncol = 3L,
+					byrow = FALSE
+				) +
+				profile_vertices[, 1] *
+					matrix(rep(current_side, each = ring_size), ncol = 3L) +
+				profile_vertices[, 2] *
+					matrix(rep(current_binormal, each = ring_size), ncol = 3L)
+
+			vertices[vertex_rows, ] = ring_vertices
+			normals[vertex_rows, ] =
+				profile_normals[, 1] *
+					matrix(rep(current_side, each = ring_size), ncol = 3L) +
+				profile_normals[, 2] *
+					matrix(rep(current_binormal, each = ring_size), ncol = 3L)
+			centerline[ring_counter, ] = current_center
+			tangent[ring_counter, ] = current_tangent
+			normal_axis[ring_counter, ] = current_side
+			binormal_axis[ring_counter, ] = current_binormal
+			residue_parameter[ring_counter] = segment_index - 0.5 + fraction
+			sampled_width[ring_counter] = diff(range(profile_vertices[, 1]))
+			sampled_thickness[ring_counter] = diff(range(profile_vertices[, 2]))
+			profile_kind[ring_counter] = profiles$type1
+			ring_v[[ring_counter]] = profile_perimeter_fraction(profile_vertices)
+			ring_counter = ring_counter + 1L
+		}
+	}
+
+	arc_length = numeric(ring_count)
+	if (ring_count > 1L) {
+		arc_length[-1] = cumsum(sqrt(rowSums(
+			(centerline[-1, , drop = FALSE] - centerline[-ring_count, , drop = FALSE])^2
+		)))
+	}
+	if (arc_length[ring_count] <= 0) {
+		u_values = rep(0, ring_count)
+	} else {
+		u_values = arc_length / arc_length[ring_count]
+	}
+
+	for (ring_index in seq_len(ring_count)) {
+		tex_rows = ((ring_index - 1L) * (ring_size + 1L) + 1L):(ring_index * (ring_size + 1L))
+		texcoords[tex_rows[-length(tex_rows)], ] = cbind(
+			rep(u_values[ring_index], ring_size),
+			ring_v[[ring_index]]
+		)
+		texcoords[tex_rows[length(tex_rows)], ] = c(u_values[ring_index], 1)
+	}
+
+	normals[seq_len(side_vertex_count), ] = compute_ribbon_surface_normals(
+		vertices = vertices[seq_len(side_vertex_count), , drop = FALSE],
+		centerline = centerline,
+		ring_count = ring_count,
+		ring_size = ring_size,
+		fallback_normals = normals[seq_len(side_vertex_count), , drop = FALSE]
+	)
+
+	start_center_index = side_vertex_count + 1L
+	end_center_index = side_vertex_count + 2L
+	vertices[start_center_index, ] = centerline[1, ]
+	vertices[end_center_index, ] = centerline[ring_count, ]
+	normals[start_center_index, ] = -tangent[1, ]
+	normals[end_center_index, ] = tangent[ring_count, ]
+
+	start_center_tex = ring_count * (ring_size + 1L) + 1L
+	end_center_tex = start_center_tex + 1L
+	texcoords[start_center_tex, ] = c(0, 0.5)
+	texcoords[end_center_tex, ] = c(1, 0.5)
+
+	side_data = connect_ribbon_rings(
+		vertices = vertices[seq_len(side_vertex_count), , drop = FALSE],
+		ring_count = ring_count,
+		ring_size = ring_size,
+		normals = normals[seq_len(side_vertex_count), , drop = FALSE]
+	)
+	cap_data = cap_ribbon_ends(ring_count = ring_count, ring_size = ring_size)
+
+	sampled_df = data.frame(
+		x = centerline[, 1],
+		y = centerline[, 2],
+		z = centerline[, 3],
+		tangent_x = tangent[, 1],
+		tangent_y = tangent[, 2],
+		tangent_z = tangent[, 3],
+		normal_x = normal_axis[, 1],
+		normal_y = normal_axis[, 2],
+		normal_z = normal_axis[, 3],
+		binormal_x = binormal_axis[, 1],
+		binormal_y = binormal_axis[, 2],
+		binormal_z = binormal_axis[, 3],
+		arc_length = arc_length,
+		chain_id = rep(chain_id, ring_count),
+		residue_parameter = residue_parameter,
+		ribbon_width = sampled_width,
+		ribbon_thickness = sampled_thickness,
+		profile_kind = profile_kind,
+		stringsAsFactors = FALSE
+	)
+
+	return(list(
+		chain_id = chain_id,
+		chain_index = chain_index,
+		vertices = vertices,
+		indices = rbind(side_data$indices, cap_data$indices),
+		normals = normals,
+		norm_indices = rbind(side_data$norm_indices, cap_data$norm_indices),
+		texcoords = texcoords,
+		tex_indices = rbind(side_data$tex_indices, cap_data$tex_indices),
+		sampled = list(
+			centerline = centerline,
+			tangent = tangent,
+			normal = normal_axis,
+			binormal = binormal_axis,
+			arc_length = arc_length,
+			chain_id = rep(chain_id, ring_count),
+			residue_parameter = residue_parameter,
+			sampled = sampled_df
+		)
+	))
+}
+
+#' @keywords internal
+peptide_surface_segment_eligible = function(residues) {
+	if (!is.data.frame(residues)) {
+		stop("peptide_surface_segment_eligible() requires a residue data frame")
+	}
+	if (nrow(residues) < 3L) {
+		return(FALSE)
+	}
+	if (!all(residues$has_ca)) {
+		return(FALSE)
+	}
+	if (!all(residues$has_o[seq_len(nrow(residues) - 1L)])) {
+		return(FALSE)
+	}
+	return(TRUE)
+}
+
+#' @keywords internal
 build_ribbon_mesh = function(
 	residues,
 	ribbon_width = 1.6,
@@ -689,6 +1517,22 @@ build_ribbon_mesh = function(
 
 	for (segment_index in seq_along(segment_rows)) {
 		chain_residues = residues[segment_rows[[segment_index]], , drop = FALSE]
+		use_peptide_surface = peptide_surface_segment_eligible(chain_residues)
+
+		if (use_peptide_surface) {
+			chain_meshes[[segment_index]] = build_peptide_surface_chain_mesh(
+				residues = chain_residues,
+				ribbon_width = ribbon_width,
+				ribbon_thickness = ribbon_thickness,
+				cross_section_resolution = cross_section_resolution,
+				subdivisions = subdivisions,
+				chain_id = chain_residues$chain_id[1],
+				chain_index = segment_index
+			)
+			sampled_paths[[segment_index]] = chain_meshes[[segment_index]]$sampled
+			next
+		}
+
 		control_points = cbind(
 			chain_residues$ca_x,
 			chain_residues$ca_y,
@@ -713,21 +1557,21 @@ build_ribbon_mesh = function(
 			tangent = sampled_chain$tangent,
 			guides = guides,
 			chain_id = chain_residues$chain_id[1],
-			residue_parameter = sampled_chain$residue_parameter
+			residue_parameter = sampled_chain$residue_parameter,
+			residues = chain_residues
 		)
-		ribbon_dimensions = build_ribbon_dimensions(
-			residues = chain_residues,
-			residue_parameter = frame$residue_parameter,
-			ribbon_width = ribbon_width,
-			ribbon_thickness = ribbon_thickness
-		)
-		frame$sampled$ribbon_width = ribbon_dimensions$width
-		frame$sampled$ribbon_thickness = ribbon_dimensions$thickness
+		ribbon_widths = rep(ribbon_width, length(frame$residue_parameter))
+		ribbon_thicknesses = rep(ribbon_thickness, length(frame$residue_parameter))
+		shape_exponents = rep(4, length(frame$residue_parameter))
+		frame$sampled$ribbon_width = ribbon_widths
+		frame$sampled$ribbon_thickness = ribbon_thicknesses
+		frame$sampled$ribbon_profile_exponent = shape_exponents
 
 		chain_meshes[[segment_index]] = build_single_ribbon_chain_mesh(
 			frame = frame,
-			ribbon_widths = ribbon_dimensions$width,
-			ribbon_thicknesses = ribbon_dimensions$thickness,
+			ribbon_widths = ribbon_widths,
+			ribbon_thicknesses = ribbon_thicknesses,
+			profile_exponents = shape_exponents,
 			cross_section_resolution = cross_section_resolution,
 			chain_id = chain_residues$chain_id[1],
 			chain_index = segment_index
@@ -858,7 +1702,17 @@ compute_ribbon_surface_normals = function(
 	return(normals)
 }
 
-connect_ribbon_rings = function(vertices, ring_count, ring_size) {
+connect_ribbon_rings = function(vertices, ring_count, ring_size, normals = NULL) {
+	if (!is.null(normals)) {
+		if (
+			!is.matrix(normals) ||
+				ncol(normals) != 3L ||
+				nrow(normals) != nrow(vertices)
+		) {
+			stop("connect_ribbon_rings() normals must match the vertex matrix")
+		}
+	}
+
 	triangle_count = (ring_count - 1L) * ring_size * 2L
 	indices = matrix(0L, nrow = triangle_count, ncol = 3L)
 	norm_indices = matrix(0L, nrow = triangle_count, ncol = 3L)
@@ -886,28 +1740,78 @@ connect_ribbon_rings = function(vertices, ring_count, ring_size) {
 			b_tex = if (seam) tex_a + ring_size else tex_a + next_index
 			c_tex = if (seam) tex_b + ring_size else tex_b + next_index
 
-			if (diagonal_ac <= diagonal_bd) {
-				indices[counter, ] = c(a, b, c)
-				indices[counter + 1L, ] = c(a, c, d)
-				norm_indices[counter, ] = c(a, b, c)
-				norm_indices[counter + 1L, ] = c(a, c, d)
-				tex_indices[counter, ] = c(tex_a + vertex_index, b_tex, c_tex)
-				tex_indices[counter + 1L, ] = c(
-					tex_a + vertex_index,
-					c_tex,
-					tex_b + vertex_index
-				)
+			if (is.null(normals)) {
+				if (diagonal_ac <= diagonal_bd) {
+					indices[counter, ] = c(a, b, c)
+					indices[counter + 1L, ] = c(a, c, d)
+					norm_indices[counter, ] = c(a, b, c)
+					norm_indices[counter + 1L, ] = c(a, c, d)
+					tex_indices[counter, ] = c(tex_a + vertex_index, b_tex, c_tex)
+					tex_indices[counter + 1L, ] = c(
+						tex_a + vertex_index,
+						c_tex,
+						tex_b + vertex_index
+					)
+				} else {
+					indices[counter, ] = c(a, b, d)
+					indices[counter + 1L, ] = c(b, c, d)
+					norm_indices[counter, ] = c(a, b, d)
+					norm_indices[counter + 1L, ] = c(b, c, d)
+					tex_indices[counter, ] = c(
+						tex_a + vertex_index,
+						b_tex,
+						tex_b + vertex_index
+					)
+					tex_indices[counter + 1L, ] = c(b_tex, c_tex, tex_b + vertex_index)
+				}
 			} else {
-				indices[counter, ] = c(a, b, d)
-				indices[counter + 1L, ] = c(b, c, d)
-				norm_indices[counter, ] = c(a, b, d)
-				norm_indices[counter + 1L, ] = c(b, c, d)
-				tex_indices[counter, ] = c(
-					tex_a + vertex_index,
-					b_tex,
-					tex_b + vertex_index
+				candidate_indices = list(
+					rbind(c(a, b, c), c(a, c, d)),
+					rbind(c(a, c, b), c(a, d, c)),
+					rbind(c(a, b, d), c(b, c, d)),
+					rbind(c(a, d, b), c(b, d, c))
 				)
-				tex_indices[counter + 1L, ] = c(b_tex, c_tex, tex_b + vertex_index)
+				candidate_tex = list(
+					rbind(
+						c(tex_a + vertex_index, b_tex, c_tex),
+						c(tex_a + vertex_index, c_tex, tex_b + vertex_index)
+					),
+					rbind(
+						c(tex_a + vertex_index, c_tex, b_tex),
+						c(tex_a + vertex_index, tex_b + vertex_index, c_tex)
+					),
+					rbind(
+						c(tex_a + vertex_index, b_tex, tex_b + vertex_index),
+						c(b_tex, c_tex, tex_b + vertex_index)
+					),
+					rbind(
+						c(tex_a + vertex_index, tex_b + vertex_index, b_tex),
+						c(b_tex, tex_b + vertex_index, c_tex)
+					)
+				)
+				candidate_score = rep(-Inf, length(candidate_indices))
+
+				for (candidate_index in seq_along(candidate_indices)) {
+					triangle_indices = candidate_indices[[candidate_index]]
+					score_1 = triangle_orientation_score(
+						vertices = vertices,
+						normals = normals,
+						triangle = triangle_indices[1, ]
+					)
+					score_2 = triangle_orientation_score(
+						vertices = vertices,
+						normals = normals,
+						triangle = triangle_indices[2, ]
+					)
+					if (is.finite(score_1) && is.finite(score_2)) {
+						candidate_score[candidate_index] = min(score_1, score_2) + 0.01 * (score_1 + score_2)
+					}
+				}
+
+				best_index = which.max(candidate_score)
+				indices[counter:(counter + 1L), ] = candidate_indices[[best_index]]
+				norm_indices[counter:(counter + 1L), ] = candidate_indices[[best_index]]
+				tex_indices[counter:(counter + 1L), ] = candidate_tex[[best_index]]
 			}
 			counter = counter + 2L
 		}
@@ -918,6 +1822,24 @@ connect_ribbon_rings = function(vertices, ring_count, ring_size) {
 		norm_indices = norm_indices,
 		tex_indices = tex_indices
 	))
+}
+
+#' @keywords internal
+triangle_orientation_score = function(vertices, normals, triangle) {
+	vertex_ids = triangle + 1L
+	edge1 = vertices[vertex_ids[2], ] - vertices[vertex_ids[1], ]
+	edge2 = vertices[vertex_ids[3], ] - vertices[vertex_ids[1], ]
+	face_normal = cross(edge1, edge2)
+	if (vector_length(face_normal) <= 1e-8) {
+		return(-Inf)
+	}
+
+	reference_normal = colMeans(normals[vertex_ids, , drop = FALSE])
+	if (vector_length(reference_normal) <= 1e-8) {
+		return(-Inf)
+	}
+
+	return(sum(face_normal * reference_normal))
 }
 
 #' @keywords internal
@@ -981,6 +1903,7 @@ build_single_ribbon_chain_mesh = function(
 	frame,
 	ribbon_widths,
 	ribbon_thicknesses,
+	profile_exponents,
 	cross_section_resolution,
 	chain_id,
 	chain_index
@@ -988,7 +1911,8 @@ build_single_ribbon_chain_mesh = function(
 	profile = ribbon_cross_section_profile(
 		ribbon_width = ribbon_widths[1],
 		ribbon_thickness = ribbon_thicknesses[1],
-		cross_section_resolution = cross_section_resolution
+		cross_section_resolution = cross_section_resolution,
+		shape_exponent = profile_exponents[1]
 	)
 	ring_count = nrow(frame$centerline)
 	ring = build_ribbon_ring(
@@ -1018,7 +1942,8 @@ build_single_ribbon_chain_mesh = function(
 		profile = ribbon_cross_section_profile(
 			ribbon_width = ribbon_widths[ring_index],
 			ribbon_thickness = ribbon_thicknesses[ring_index],
-			cross_section_resolution = cross_section_resolution
+			cross_section_resolution = cross_section_resolution,
+			shape_exponent = profile_exponents[ring_index]
 		)
 		ring = build_ribbon_ring(
 			center = frame$centerline[ring_index, ],
@@ -1064,7 +1989,8 @@ build_single_ribbon_chain_mesh = function(
 	side_data = connect_ribbon_rings(
 		vertices = vertices[seq_len(ring_count * ring_size), , drop = FALSE],
 		ring_count = ring_count,
-		ring_size = ring_size
+		ring_size = ring_size,
+		normals = normals[seq_len(ring_count * ring_size), , drop = FALSE]
 	)
 	cap_data = cap_ribbon_ends(ring_count = ring_count, ring_size = ring_size)
 
@@ -1145,14 +2071,21 @@ split_ribbon_segments = function(residues) {
 ribbon_cross_section_profile = function(
 	ribbon_width,
 	ribbon_thickness,
-	cross_section_resolution = 24
+	cross_section_resolution = 24,
+	shape_exponent = 4
 ) {
 	cross_section_resolution = normalize_cross_section_resolution(
 		cross_section_resolution
 	)
+	if (
+		length(shape_exponent) != 1L ||
+			!is.finite(shape_exponent) ||
+			shape_exponent <= 0
+	) {
+		stop("shape_exponent must be a positive number")
+	}
 	half_width = ribbon_width / 2
 	half_thickness = ribbon_thickness / 2
-	shape_exponent = 4
 	theta = seq(0, 2 * pi, length.out = cross_section_resolution + 1L)
 	theta = theta[-length(theta)] - (3 * pi / 4)
 

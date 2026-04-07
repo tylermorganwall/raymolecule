@@ -3,13 +3,19 @@
 #' Reads a legacy fixed-width PDB file and extracts atom locations, bond
 #' connections, backbone residue information, and secondary structure records.
 #' `model$atoms` and `model$bonds` remain compatible with the existing atom and
-#' bond scene generators.
+#' bond scene generators. Biological assemblies can be generated from
+#' `REMARK 350 BIOMT` transforms when requested.
 #'
 #' @param filename Path to the PDB file.
 #' @param atom Default `TRUE`. Whether to include standard residue `ATOM`
 #'   records in `model$atoms`.
 #' @param nsr Default `TRUE`. Whether to include `HETATM` records in
 #'   `model$atoms`.
+#' @param assembly Default `"asymmetric_unit"`. Either the deposited asymmetric
+#'   unit or the biological assembly generated from `REMARK 350 BIOMT`
+#'   transforms.
+#' @param assembly_id Default `1L`. Biological assembly identifier to use when
+#'   `assembly = "biological"`.
 #'
 #' @return List giving the parsed PDB model.
 #' @export
@@ -20,12 +26,39 @@
 #'   read_pdb("3nir.pdb") |>
 #'     generate_full_scene() |>
 #'     render_model()
+#'
+#'   read_pdb("3nir.pdb", assembly = "biological") |>
+#'     generate_ribbon_scene(pathtrace = FALSE) |>
+#'     render_model()
 #' }
-read_pdb = function(filename, atom = TRUE, nsr = TRUE) {
+read_pdb = function(
+	filename,
+	atom = TRUE,
+	nsr = TRUE,
+	assembly = c("asymmetric_unit", "biological"),
+	assembly_id = 1L
+) {
+	assembly = match.arg(assembly)
+	if (
+		length(assembly_id) != 1L ||
+			is.na(assembly_id) ||
+			!is.finite(assembly_id) ||
+			assembly_id < 1
+	) {
+		stop("assembly_id must be a positive integer")
+	}
+	assembly_id = as.integer(assembly_id)
+
 	#Read in all the lines first
 	lines = readLines(filename, warn = FALSE)
 	#Parse the file
 	records = parse_pdb_records(lines)
+	if (identical(assembly, "biological")) {
+		records = expand_pdb_biological_assembly(
+			records = records,
+			assembly_id = assembly_id
+		)
+	}
 
 	atom_mask =
 		(records$atoms$record == "ATOM" & atom) |
@@ -58,6 +91,9 @@ read_pdb = function(filename, atom = TRUE, nsr = TRUE) {
 		sheets = records$sheets,
 		ssbonds = records$ssbonds,
 		chains = records$chains,
+		assemblies = records$assemblies,
+		assembly_mode = assembly,
+		assembly_id = if (identical(assembly, "biological")) assembly_id else NA_integer_,
 		pdb_type = "pdb"
 	))
 }
@@ -71,6 +107,7 @@ parse_pdb_records = function(lines) {
 	sheet_rows = list()
 	ssbond_rows = list()
 	ter_rows = list()
+	assembly_rows = list()
 
 	#Start counting
 	atom_counter = 1L
@@ -182,6 +219,8 @@ parse_pdb_records = function(lines) {
 		}
 	}
 
+	assembly_rows = parse_pdb_assembly_records(lines)
+
 	# This specifies the schema for each data type, and ensures it's enforced even at zero rows
 	atoms = bind_pdb_rows(atom_rows, empty_pdb_atoms())
 	bonds = bind_pdb_rows(bond_rows, empty_pdb_bonds())
@@ -189,6 +228,7 @@ parse_pdb_records = function(lines) {
 	sheets = bind_pdb_rows(sheet_rows, empty_pdb_sheets())
 	ssbonds = bind_pdb_rows(ssbond_rows, empty_pdb_ssbonds())
 	ters = bind_pdb_rows(ter_rows, empty_pdb_ters())
+	assemblies = bind_pdb_rows(assembly_rows, empty_pdb_assemblies())
 
 	# This builds the actual ribbon diagram data, with the helix, sheet, and terminator data
 	residue_info = build_pdb_residues(
@@ -205,8 +245,403 @@ parse_pdb_records = function(lines) {
 		chains = residue_info$chains,
 		helices = helices,
 		sheets = sheets,
-		ssbonds = ssbonds
+		ssbonds = ssbonds,
+		ters = ters,
+		assemblies = assemblies
 	))
+}
+
+#' @keywords internal
+parse_pdb_assembly_records = function(lines) {
+	assembly_rows = list()
+	current_assembly_ids = integer()
+	current_chain_ids = character()
+	current_chain_block_id = 0L
+	matrix_registry = list()
+	row_counter = 1L
+
+	for (line_number in seq_along(lines)) {
+		line = lines[[line_number]]
+		if (!startsWith(line, "REMARK 350")) {
+			next
+		}
+
+		if (grepl("^REMARK 350 BIOMOLECULE:", line)) {
+			current_assembly_ids = parse_pdb_biomolecule_ids(line, line_number)
+			current_chain_ids = character()
+			current_chain_block_id = 0L
+			next
+		}
+
+		if (grepl("^REMARK 350 APPLY THE FOLLOWING TO CHAINS:", line)) {
+			current_chain_ids = parse_pdb_assembly_chain_ids(line)
+			current_chain_block_id = current_chain_block_id + 1L
+			next
+		}
+
+		if (grepl("^REMARK 350                    AND CHAINS:", line)) {
+			current_chain_ids = c(
+				current_chain_ids,
+				parse_pdb_assembly_chain_ids(line)
+			)
+			current_chain_ids = unique(current_chain_ids)
+			next
+		}
+
+		if (grepl("^REMARK 350   BIOMT[123]", line)) {
+			if (length(current_assembly_ids) == 0L || length(current_chain_ids) == 0L) {
+				stop(
+					sprintf(
+						"Malformed REMARK 350 BIOMT record at line %d: missing BIOMOLECULE or chain assignment",
+						line_number
+					)
+				)
+			}
+
+			biomt_row = parse_pdb_biomt_record(line, line_number)
+			for (assembly_id in current_assembly_ids) {
+				matrix_key = paste(
+					assembly_id,
+					current_chain_block_id,
+					biomt_row$transform_id,
+					sep = "\r"
+				)
+				if (is.null(matrix_registry[[matrix_key]])) {
+					matrix_registry[[matrix_key]] = list(
+						rows = vector(mode = "list", length = 3L),
+						chains = current_chain_ids
+					)
+				}
+
+				matrix_registry[[matrix_key]]$rows[[biomt_row$row_index]] = biomt_row$values
+				matrix_registry[[matrix_key]]$chains = current_chain_ids
+
+				if (all(vapply(matrix_registry[[matrix_key]]$rows, Negate(is.null), logical(1)))) {
+					matrix_values = do.call(rbind, matrix_registry[[matrix_key]]$rows)
+					for (chain_id in matrix_registry[[matrix_key]]$chains) {
+						assembly_rows[[row_counter]] = data.frame(
+							assembly_id = assembly_id,
+							transform_id = biomt_row$transform_id,
+							chain_id = chain_id,
+							m11 = matrix_values[1, 1],
+							m12 = matrix_values[1, 2],
+							m13 = matrix_values[1, 3],
+							t1 = matrix_values[1, 4],
+							m21 = matrix_values[2, 1],
+							m22 = matrix_values[2, 2],
+							m23 = matrix_values[2, 3],
+							t2 = matrix_values[2, 4],
+							m31 = matrix_values[3, 1],
+							m32 = matrix_values[3, 2],
+							m33 = matrix_values[3, 3],
+							t3 = matrix_values[3, 4],
+							stringsAsFactors = FALSE
+						)
+						row_counter = row_counter + 1L
+					}
+				}
+			}
+		}
+	}
+
+	if (length(matrix_registry) > 0L) {
+		complete_flags = vapply(
+			matrix_registry,
+			function(entry) all(vapply(entry$rows, Negate(is.null), logical(1))),
+			logical(1)
+		)
+		if (any(!complete_flags)) {
+			stop("Malformed REMARK 350 BIOMT records: incomplete transform matrix")
+		}
+	}
+
+	return(assembly_rows)
+}
+
+#' @keywords internal
+parse_pdb_biomolecule_ids = function(line, line_number) {
+	text = trimws(sub("^REMARK 350 BIOMOLECULE:\\s*", "", line))
+	if (!nzchar(text)) {
+		stop(
+			sprintf(
+				"Malformed REMARK 350 BIOMOLECULE record at line %d",
+				line_number
+			)
+		)
+	}
+
+	ids = as.integer(trimws(unlist(strsplit(text, ","))))
+	if (any(is.na(ids))) {
+		stop(
+			sprintf(
+				"Malformed REMARK 350 BIOMOLECULE record at line %d",
+				line_number
+			)
+		)
+	}
+
+	return(ids)
+}
+
+#' @keywords internal
+parse_pdb_assembly_chain_ids = function(line) {
+	text = trimws(sub("^REMARK 350\\s+(APPLY THE FOLLOWING TO CHAINS:|AND CHAINS:)\\s*", "", line))
+	chain_ids = trimws(unlist(strsplit(text, ",")))
+	chain_ids = chain_ids[nzchar(chain_ids)]
+	return(chain_ids)
+}
+
+#' @keywords internal
+parse_pdb_biomt_record = function(line, line_number) {
+	matches = regexec(
+		"^REMARK 350   BIOMT([123])\\s+(\\d+)\\s+([-0-9.Ee+]+)\\s+([-0-9.Ee+]+)\\s+([-0-9.Ee+]+)\\s+([-0-9.Ee+]+)\\s*$",
+		line
+	)
+	values = regmatches(line, matches)[[1]]
+	if (length(values) != 7L) {
+		stop(
+			sprintf(
+				"Malformed REMARK 350 BIOMT record at line %d",
+				line_number
+			)
+		)
+	}
+
+	parsed_values = as.numeric(values[4:7])
+	if (any(!is.finite(parsed_values))) {
+		stop(
+			sprintf(
+				"Malformed REMARK 350 BIOMT record at line %d",
+				line_number
+			)
+		)
+	}
+
+	return(list(
+		row_index = as.integer(values[2]),
+		transform_id = as.integer(values[3]),
+		values = parsed_values
+	))
+}
+
+#' @keywords internal
+expand_pdb_biological_assembly = function(records, assembly_id) {
+	if (!"assemblies" %in% names(records) || nrow(records$assemblies) == 0L) {
+		stop("Biological assembly transforms were not found in this PDB file")
+	}
+
+	assembly_rows = records$assemblies[
+		records$assemblies$assembly_id == assembly_id,
+		,
+		drop = FALSE
+	]
+	if (nrow(assembly_rows) == 0L) {
+		stop(sprintf("Biological assembly %d was not found in this PDB file", assembly_id))
+	}
+
+	transform_ids = unique(assembly_rows$transform_id)
+	transform_ids = transform_ids[order(transform_ids)]
+	expanded_atom_rows = list()
+	expanded_bond_rows = list()
+	expanded_helix_rows = list()
+	expanded_sheet_rows = list()
+	expanded_ssbond_rows = list()
+	expanded_ter_rows = list()
+	atom_counter = 1L
+	bond_counter = 1L
+	helix_counter = 1L
+	sheet_counter = 1L
+	ssbond_counter = 1L
+	ter_counter = 1L
+	next_atom_index = 1L
+	next_atom_order = 1L
+
+	for (transform_position in seq_along(transform_ids)) {
+		transform_id = transform_ids[[transform_position]]
+		transform_rows = assembly_rows[
+			assembly_rows$transform_id == transform_id,
+			,
+			drop = FALSE
+		]
+		source_chain_ids = transform_rows$chain_id
+		source_atoms = records$atoms[
+			records$atoms$chain_id %in% source_chain_ids,
+			,
+			drop = FALSE
+		]
+		if (nrow(source_atoms) == 0L) {
+			next
+		}
+
+		transform_map = integer()
+		for (row_index in seq_len(nrow(transform_rows))) {
+			transform_row = transform_rows[row_index, , drop = FALSE]
+			source_chain_id = transform_row$chain_id
+			target_chain_id = format_pdb_assembly_chain_id(
+				source_chain_id = source_chain_id,
+				transform_position = transform_position
+			)
+			chain_atoms = records$atoms[
+				records$atoms$chain_id == source_chain_id,
+				,
+				drop = FALSE
+			]
+			if (nrow(chain_atoms) == 0L) {
+				next
+			}
+
+			rotation = matrix(
+				c(
+					transform_row$m11,
+					transform_row$m12,
+					transform_row$m13,
+					transform_row$m21,
+					transform_row$m22,
+					transform_row$m23,
+					transform_row$m31,
+					transform_row$m32,
+					transform_row$m33
+				),
+				nrow = 3L,
+				byrow = TRUE
+			)
+			translation = c(transform_row$t1, transform_row$t2, transform_row$t3)
+			coords = as.matrix(chain_atoms[, c("x", "y", "z"), drop = FALSE])
+			transformed_coords = coords %*% t(rotation) +
+				matrix(rep(translation, each = nrow(coords)), ncol = 3L)
+
+			transformed_atoms = chain_atoms
+			transformed_atoms$x = transformed_coords[, 1]
+			transformed_atoms$y = transformed_coords[, 2]
+			transformed_atoms$z = transformed_coords[, 3]
+			transformed_atoms$chain_id = target_chain_id
+			transformed_atoms$index = seq.int(
+				from = next_atom_index,
+				length.out = nrow(transformed_atoms)
+			)
+			transformed_atoms$atom_order = seq.int(
+				from = next_atom_order,
+				length.out = nrow(transformed_atoms)
+			)
+
+			transform_map = c(
+				transform_map,
+				stats::setNames(transformed_atoms$index, chain_atoms$index)
+			)
+			next_atom_index = next_atom_index + nrow(transformed_atoms)
+			next_atom_order = next_atom_order + nrow(transformed_atoms)
+			expanded_atom_rows[[atom_counter]] = transformed_atoms
+			atom_counter = atom_counter + 1L
+
+			chain_helices = records$helices[
+				records$helices$start_chain_id == source_chain_id &
+					records$helices$end_chain_id == source_chain_id,
+				,
+				drop = FALSE
+			]
+			if (nrow(chain_helices) > 0L) {
+				chain_helices$start_chain_id = target_chain_id
+				chain_helices$end_chain_id = target_chain_id
+				expanded_helix_rows[[helix_counter]] = chain_helices
+				helix_counter = helix_counter + 1L
+			}
+
+			chain_sheets = records$sheets[
+				records$sheets$start_chain_id == source_chain_id &
+					records$sheets$end_chain_id == source_chain_id,
+				,
+				drop = FALSE
+			]
+			if (nrow(chain_sheets) > 0L) {
+				chain_sheets$start_chain_id = target_chain_id
+				chain_sheets$end_chain_id = target_chain_id
+				expanded_sheet_rows[[sheet_counter]] = chain_sheets
+				sheet_counter = sheet_counter + 1L
+			}
+
+			chain_ters = records$ters[
+				records$ters$chain_id == source_chain_id,
+				,
+				drop = FALSE
+			]
+			if (nrow(chain_ters) > 0L) {
+				chain_ters$chain_id = target_chain_id
+				expanded_ter_rows[[ter_counter]] = chain_ters
+				ter_counter = ter_counter + 1L
+			}
+		}
+
+		if (length(transform_map) > 0L) {
+			selected_bonds = records$bonds[
+				as.character(records$bonds$from) %in% names(transform_map) &
+					as.character(records$bonds$to) %in% names(transform_map),
+				,
+				drop = FALSE
+			]
+			if (nrow(selected_bonds) > 0L) {
+				selected_bonds$from = unname(transform_map[as.character(selected_bonds$from)])
+				selected_bonds$to = unname(transform_map[as.character(selected_bonds$to)])
+				expanded_bond_rows[[bond_counter]] = selected_bonds
+				bond_counter = bond_counter + 1L
+			}
+		}
+
+		transform_ssbonds = records$ssbonds[
+			records$ssbonds$chain_id_1 %in% source_chain_ids &
+				records$ssbonds$chain_id_2 %in% source_chain_ids,
+			,
+			drop = FALSE
+		]
+		if (nrow(transform_ssbonds) > 0L) {
+			transform_ssbonds$chain_id_1 = vapply(
+				transform_ssbonds$chain_id_1,
+				format_pdb_assembly_chain_id,
+				character(1),
+				transform_position = transform_position
+			)
+			transform_ssbonds$chain_id_2 = vapply(
+				transform_ssbonds$chain_id_2,
+				format_pdb_assembly_chain_id,
+				character(1),
+				transform_position = transform_position
+			)
+			expanded_ssbond_rows[[ssbond_counter]] = transform_ssbonds
+			ssbond_counter = ssbond_counter + 1L
+		}
+	}
+
+	expanded_atoms = bind_pdb_rows(expanded_atom_rows, empty_pdb_atoms())
+	expanded_bonds = bind_pdb_rows(expanded_bond_rows, empty_pdb_bonds())
+	expanded_helices = bind_pdb_rows(expanded_helix_rows, empty_pdb_helices())
+	expanded_sheets = bind_pdb_rows(expanded_sheet_rows, empty_pdb_sheets())
+	expanded_ssbonds = bind_pdb_rows(expanded_ssbond_rows, empty_pdb_ssbonds())
+	expanded_ters = bind_pdb_rows(expanded_ter_rows, empty_pdb_ters())
+	expanded_residue_info = build_pdb_residues(
+		atoms = expanded_atoms[expanded_atoms$record == "ATOM", , drop = FALSE],
+		helices = expanded_helices,
+		sheets = expanded_sheets,
+		ters = expanded_ters
+	)
+
+	return(list(
+		atoms = expanded_atoms,
+		bonds = expanded_bonds,
+		residues = expanded_residue_info$residues,
+		chains = expanded_residue_info$chains,
+		helices = expanded_helices,
+		sheets = expanded_sheets,
+		ssbonds = expanded_ssbonds,
+		ters = expanded_ters,
+		assemblies = records$assemblies
+	))
+}
+
+#' @keywords internal
+format_pdb_assembly_chain_id = function(source_chain_id, transform_position) {
+	if (transform_position == 1L) {
+		return(source_chain_id)
+	}
+	return(sprintf("%s_%d", source_chain_id, transform_position))
 }
 
 #' @keywords internal
@@ -580,15 +1015,18 @@ apply_pdb_secondary_structure = function(residues, helices) {
 				end_i_code = helix$end_i_code
 			)
 
-		overlapping = within_range & residues$ss_class != "loop"
-		if (any(overlapping)) {
+		conflicting = within_range &
+			residues$ss_class != "loop" &
+			residues$ss_class != "helix"
+		if (any(conflicting)) {
 			stop(
-				"Overlapping HELIX/SHEET residue annotations are not supported yet"
+				"Conflicting HELIX/SHEET residue annotations are not supported yet"
 			)
 		}
 
-		residues$ss_class[within_range] = "helix"
-		residues$helix_id[within_range] = helix$helix_id
+		new_rows = within_range & residues$ss_class == "loop"
+		residues$ss_class[new_rows] = "helix"
+		residues$helix_id[new_rows] = helix$helix_id
 	}
 
 	return(residues)
@@ -617,16 +1055,19 @@ apply_pdb_sheet_structure = function(residues, sheets) {
 				end_i_code = sheet$end_i_code
 			)
 
-		overlapping = within_range & residues$ss_class != "loop"
-		if (any(overlapping)) {
+		conflicting = within_range &
+			residues$ss_class != "loop" &
+			residues$ss_class != "sheet"
+		if (any(conflicting)) {
 			stop(
-				"Overlapping HELIX/SHEET residue annotations are not supported yet"
+				"Conflicting HELIX/SHEET residue annotations are not supported yet"
 			)
 		}
 
-		residues$ss_class[within_range] = "sheet"
-		residues$sheet_id[within_range] = sheet$sheet_id
-		residues$sheet_strand[within_range] = sheet$strand
+		new_rows = within_range & residues$ss_class == "loop"
+		residues$ss_class[new_rows] = "sheet"
+		residues$sheet_id[new_rows] = sheet$sheet_id
+		residues$sheet_strand[new_rows] = sheet$strand
 	}
 
 	return(residues)
@@ -886,6 +1327,28 @@ empty_pdb_ters = function() {
 		chain_id = character(),
 		res_seq = integer(),
 		i_code = character(),
+		stringsAsFactors = FALSE
+	))
+}
+
+#' @keywords internal
+empty_pdb_assemblies = function() {
+	return(data.frame(
+		assembly_id = integer(),
+		transform_id = integer(),
+		chain_id = character(),
+		m11 = numeric(),
+		m12 = numeric(),
+		m13 = numeric(),
+		t1 = numeric(),
+		m21 = numeric(),
+		m22 = numeric(),
+		m23 = numeric(),
+		t2 = numeric(),
+		m31 = numeric(),
+		m32 = numeric(),
+		m33 = numeric(),
+		t3 = numeric(),
 		stringsAsFactors = FALSE
 	))
 }

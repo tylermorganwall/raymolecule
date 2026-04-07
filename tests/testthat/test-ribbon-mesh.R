@@ -3,7 +3,8 @@ make_mesh_residue_table = function(
   o_points,
   chain_id = "A",
   ss_class = NULL,
-  sheet_id = NULL
+  sheet_id = NULL,
+  sheet_strand = NULL
 ) {
   count = nrow(ca_points)
   if (is.null(ss_class)) {
@@ -11,6 +12,9 @@ make_mesh_residue_table = function(
   }
   if (is.null(sheet_id)) {
     sheet_id = rep(NA_character_, count)
+  }
+  if (is.null(sheet_strand)) {
+    sheet_strand = rep(NA_integer_, count)
   }
   data.frame(
     chain_id = rep(chain_id, count),
@@ -39,6 +43,7 @@ make_mesh_residue_table = function(
     ss_class = ss_class,
     helix_id = rep(NA_character_, count),
     sheet_id = sheet_id,
+    sheet_strand = sheet_strand,
     stringsAsFactors = FALSE
   )
 }
@@ -150,6 +155,16 @@ test_that("cross-section resolution must be at least eight vertices", {
   )
 })
 
+test_that("profile generators share a common perimeter phase", {
+  ellipse = raymolecule:::ellipse_profile_2d(24, 0.6, 0.6)
+  rectangle = raymolecule:::rectangle_profile_2d(24, 1.6, 0.44)
+  rounded = raymolecule:::rounded_rectangle_profile_2d(24, 1.6, 0.25)
+
+  expect_equal(which.max(ellipse[, 1] + ellipse[, 2]), 1L)
+  expect_equal(which.max(rectangle[, 1] + rectangle[, 2]), 1L)
+  expect_equal(which.max(rounded[, 1] + rounded[, 2]), 1L)
+})
+
 test_that("sheet runs generate tapered arrow widths", {
   ca_points = matrix(
     c(
@@ -183,13 +198,230 @@ test_that("sheet runs generate tapered arrow widths", {
 
   widths = mesh$sampled$sampled$ribbon_width
   parameters = mesh$sampled$residue_parameter
-  tip_index = which.min(abs(parameters - 3))
-  pre_tip_mask = parameters >= 1 & parameters < 3
-  post_tip_index = which.min(abs(parameters - 3.25))
+  head_start_index = which(parameters > 2.5)[1]
+  head_mask = parameters >= parameters[head_start_index] & parameters <= 3.25
+  taper_mask = parameters >= 2.75 & parameters <= 3.25
 
-  expect_gt(max(widths[pre_tip_mask]), 1.6)
-  expect_lt(widths[tip_index], 0.5)
-  expect_gt(widths[post_tip_index], widths[tip_index])
+  expect_gt(max(widths[head_mask]), 1.6)
+  expect_equal(widths[which.min(abs(parameters - 2.5))], 1.6, tolerance = 1e-6)
+  expect_lt(parameters[head_start_index] - 2.5, 0.01)
+  expect_gt(widths[head_start_index], 1.6)
+  expect_true(all(diff(widths[taper_mask]) < 0))
+  expect_lt(widths[which.min(abs(parameters - 3.25))], 0.7)
+})
+
+test_that("peptide-plane transitions avoid collapsed interior rings", {
+  ca_points = matrix(
+    c(
+      0, 0, 0,
+      1.5, 0, 0.1,
+      3.0, 0.1, 0.2,
+      4.5, 0.1, 0.3,
+      6.0, 0.0, 0.4,
+      7.5, -0.1, 0.5
+    ),
+    ncol = 3,
+    byrow = TRUE
+  )
+  o_points = ca_points + matrix(
+    rep(c(0, 0.8, 0), nrow(ca_points)),
+    ncol = 3,
+    byrow = TRUE
+  )
+  residues = make_mesh_residue_table(
+    ca_points,
+    o_points,
+    ss_class = c("loop", "sheet", "sheet", "sheet", "loop", "loop"),
+    sheet_id = c(NA, "S1", "S1", "S1", NA, NA)
+  )
+
+  mesh = raymolecule:::build_ribbon_mesh(
+    residues = residues,
+    subdivisions = 8,
+    cross_section_resolution = 24
+  )$chains[[1]]
+
+  expect_true(all(mesh$sampled$sampled$ribbon_width > 0))
+  expect_true(all(mesh$sampled$sampled$ribbon_thickness > 0))
+
+  index_rows = mesh$indices + 1L
+  edge1 = mesh$vertices[index_rows[, 2], , drop = FALSE] -
+    mesh$vertices[index_rows[, 1], , drop = FALSE]
+  edge2 = mesh$vertices[index_rows[, 3], , drop = FALSE] -
+    mesh$vertices[index_rows[, 1], , drop = FALSE]
+  face_normals = cbind(
+    edge1[, 2] * edge2[, 3] - edge1[, 3] * edge2[, 2],
+    edge1[, 3] * edge2[, 1] - edge1[, 1] * edge2[, 3],
+    edge1[, 1] * edge2[, 2] - edge1[, 2] * edge2[, 1]
+  )
+  face_area = sqrt(rowSums(face_normals^2))
+
+  expect_true(all(face_area > 1e-8))
+})
+
+test_that("peptide-plane transition side faces keep outward winding", {
+  ca_points = matrix(
+    c(
+      0, 0, 0,
+      1.5, 0, 0.1,
+      3.0, 0.1, 0.2,
+      4.5, 0.1, 0.3,
+      6.0, 0.0, 0.4,
+      7.5, -0.1, 0.5
+    ),
+    ncol = 3,
+    byrow = TRUE
+  )
+  o_points = ca_points + matrix(
+    rep(c(0, 0.8, 0), nrow(ca_points)),
+    ncol = 3,
+    byrow = TRUE
+  )
+  residues = make_mesh_residue_table(
+    ca_points,
+    o_points,
+    ss_class = c("loop", "sheet", "sheet", "sheet", "loop", "loop"),
+    sheet_id = c(NA, "S1", "S1", "S1", NA, NA),
+    sheet_strand = c(NA, 1L, 1L, 1L, NA, NA)
+  )
+
+  mesh = raymolecule:::build_ribbon_mesh(
+    residues = residues,
+    subdivisions = 8,
+    cross_section_resolution = 60
+  )$chains[[1]]
+
+  ring_count = nrow(mesh$sampled$centerline)
+  ring_size = as.integer((nrow(mesh$vertices) - 2L) / ring_count)
+  side_triangle_count = (ring_count - 1L) * ring_size * 2L
+  side_indices = mesh$indices[seq_len(side_triangle_count), , drop = FALSE] + 1L
+  edge1 = mesh$vertices[side_indices[, 2], , drop = FALSE] -
+    mesh$vertices[side_indices[, 1], , drop = FALSE]
+  edge2 = mesh$vertices[side_indices[, 3], , drop = FALSE] -
+    mesh$vertices[side_indices[, 1], , drop = FALSE]
+  face_normals = cbind(
+    edge1[, 2] * edge2[, 3] - edge1[, 3] * edge2[, 2],
+    edge1[, 3] * edge2[, 1] - edge1[, 1] * edge2[, 3],
+    edge1[, 1] * edge2[, 2] - edge1[, 2] * edge2[, 1]
+  )
+  reference_normals =
+    mesh$normals[side_indices[, 1], , drop = FALSE] +
+    mesh$normals[side_indices[, 2], , drop = FALSE] +
+    mesh$normals[side_indices[, 3], , drop = FALSE]
+
+  expect_true(all(rowSums(face_normals * reference_normals) >= -1e-8))
+})
+
+test_that("strand-exit segment boundaries use matching profile families", {
+  ca_points = matrix(
+    c(
+      0, 0, 0,
+      1.5, 0, 0.1,
+      3.0, 0.1, 0.2,
+      4.5, 0.1, 0.3,
+      6.0, 0.0, 0.4,
+      7.5, -0.1, 0.5
+    ),
+    ncol = 3,
+    byrow = TRUE
+  )
+  o_points = ca_points + matrix(
+    rep(c(0, 0.8, 0), nrow(ca_points)),
+    ncol = 3,
+    byrow = TRUE
+  )
+  residues = make_mesh_residue_table(
+    ca_points,
+    o_points,
+    ss_class = c("loop", "sheet", "sheet", "sheet", "loop", "loop"),
+    sheet_id = c(NA, "S1", "S1", "S1", NA, NA)
+  )
+
+  planes = raymolecule:::build_peptide_planes(residues)
+  exit_profiles = raymolecule:::ribbon_segment_profiles(
+    planes = planes,
+    plane_index = 3L,
+    cross_section_resolution = 24,
+    ribbon_width = 1.6,
+    ribbon_thickness = 0.25
+  )
+  next_profiles = raymolecule:::ribbon_segment_profiles(
+    planes = planes,
+    plane_index = 4L,
+    cross_section_resolution = 24,
+    ribbon_width = 1.6,
+    ribbon_thickness = 0.25
+  )
+
+  expect_equal(next_profiles$start, exit_profiles$tip, tolerance = 1e-8)
+})
+
+test_that("complete backbone segments default to the peptide-plane ribbon builder", {
+  ca_points = matrix(
+    c(
+      0, 0, 0,
+      1.5, 0, 0.1,
+      3.0, 0.1, 0.2,
+      4.5, 0.1, 0.3
+    ),
+    ncol = 3,
+    byrow = TRUE
+  )
+  o_points = ca_points + matrix(
+    rep(c(0, 0.8, 0), nrow(ca_points)),
+    ncol = 3,
+    byrow = TRUE
+  )
+  residues = make_mesh_residue_table(ca_points, o_points)
+
+  mesh = raymolecule:::build_ribbon_mesh(
+    residues = residues,
+    subdivisions = 4,
+    cross_section_resolution = 16
+  )$chains[[1]]
+
+  expect_true("profile_kind" %in% colnames(mesh$sampled$sampled))
+  expect_true(all(mesh$sampled$sampled$profile_kind == "coil"))
+})
+
+test_that("CA/RMF ribbons remain the fallback for incomplete peptide geometry", {
+  ca_points = matrix(
+    c(
+      0, 0, 0,
+      1.5, 0, 0.1,
+      3.0, 0.1, 0.2,
+      4.5, 0.1, 0.3
+    ),
+    ncol = 3,
+    byrow = TRUE
+  )
+  o_points = ca_points + matrix(
+    rep(c(0, 0.8, 0), nrow(ca_points)),
+    ncol = 3,
+    byrow = TRUE
+  )
+  residues = make_mesh_residue_table(
+    ca_points,
+    o_points,
+    ss_class = c("loop", "sheet", "sheet", "sheet"),
+    sheet_id = c(NA, "S1", "S1", "S1"),
+    sheet_strand = c(NA, 1L, 1L, 1L)
+  )
+  residues$has_o[2] = FALSE
+  residues$o_x[2] = NA_real_
+  residues$o_y[2] = NA_real_
+  residues$o_z[2] = NA_real_
+
+  mesh = raymolecule:::build_ribbon_mesh(
+    residues = residues,
+    subdivisions = 4,
+    cross_section_resolution = 16
+  )$chains[[1]]
+
+  expect_true(all(mesh$sampled$sampled$ribbon_width == 1.6))
+  expect_true(all(mesh$sampled$sampled$ribbon_thickness == 0.25))
+  expect_true(all(mesh$sampled$sampled$ribbon_profile_exponent == 4))
+  expect_false("profile_kind" %in% colnames(mesh$sampled$sampled))
 })
 
 test_that("swept ribbon surface normals point outward on curved ribbons", {
@@ -237,6 +469,64 @@ test_that("warped ribbon quads use the shorter diagonal", {
   expect_equal(connectivity$indices[2, ], c(1L, 5L, 4L))
 })
 
+test_that("connect_ribbon_rings uses normals to keep local quad winding outward", {
+  vertices = structure(
+    c(
+      -0.187936, 0.055093, -0.250689, 0.478584,
+      -0.231355, 0.010211, -0.312415, 0.516418,
+      0.098852, -0.246141, 0.146229, 0.221497,
+      -0.034936, -0.180788, -0.039402, 0.187857,
+      0, 0, 0, 0,
+      1.056609, 1.02, 1.120628, 0.991434
+    ),
+    dim = c(8L, 3L)
+  )
+  normals = structure(
+    c(
+      -0.979313, 0.103442, -0.949061, 0.93913,
+      -0.995977, 0.086889, -0.970275, 0.926099,
+      0.202353, -0.994636, 0.315093, 0.343563,
+      -0.079472, -0.982819, -0.071118, 0.364025,
+      0, 0, 0, 0,
+      0.041412, -0.162839, 0.231321, -0.099126
+    ),
+    dim = c(8L, 3L)
+  )
+
+  count_bad_faces = function(connectivity) {
+    index_rows = connectivity$indices + 1L
+    edge1 = vertices[index_rows[, 2], , drop = FALSE] -
+      vertices[index_rows[, 1], , drop = FALSE]
+    edge2 = vertices[index_rows[, 3], , drop = FALSE] -
+      vertices[index_rows[, 1], , drop = FALSE]
+    face_normals = cbind(
+      edge1[, 2] * edge2[, 3] - edge1[, 3] * edge2[, 2],
+      edge1[, 3] * edge2[, 1] - edge1[, 1] * edge2[, 3],
+      edge1[, 1] * edge2[, 2] - edge1[, 2] * edge2[, 1]
+    )
+    reference_normals =
+      normals[index_rows[, 1], , drop = FALSE] +
+      normals[index_rows[, 2], , drop = FALSE] +
+      normals[index_rows[, 3], , drop = FALSE]
+    sum(rowSums(face_normals * reference_normals) < 0)
+  }
+
+  legacy = raymolecule:::connect_ribbon_rings(
+    vertices = vertices,
+    ring_count = 2L,
+    ring_size = 4L
+  )
+  guided = raymolecule:::connect_ribbon_rings(
+    vertices = vertices,
+    ring_count = 2L,
+    ring_size = 4L,
+    normals = normals
+  )
+
+  expect_gt(count_bad_faces(legacy), 0)
+  expect_equal(count_bad_faces(guided), 0)
+})
+
 test_that("twist unwrapping follows full turns continuously", {
   wrapped_angles = c(170, -170, 175, -175) * pi / 180
   unwrapped = numeric(length(wrapped_angles))
@@ -265,6 +555,27 @@ test_that("axial twist unwrapping suppresses guide sign flips", {
   }
 
   expect_lt(max(abs(diff(unwrapped))) * 180 / pi, 30)
+})
+
+test_that("sheet twist knot smoothing reduces strand-scale wiggle", {
+  residues = make_mesh_residue_table(
+    ca_points = cbind(seq_len(6), rep(0, 6), rep(0, 6)),
+    o_points = cbind(seq_len(6), rep(1, 6), rep(0, 6)),
+    ss_class = rep("sheet", 6),
+    sheet_id = rep("S1", 6),
+    sheet_strand = rep(1L, 6)
+  )
+  knot_positions = seq(0, 5)
+  knot_angles = c(0, 0.9, 0.1, 1.0, 0.2, 1.1)
+
+  smoothed = raymolecule:::smooth_sheet_twist_knots(
+    knot_positions = knot_positions,
+    knot_angles = knot_angles,
+    knot_residue_index = seq_len(6),
+    residues = residues
+  )
+
+  expect_lt(max(abs(diff(smoothed))), max(abs(diff(knot_angles))))
 })
 
 test_that("twist interpolation is smooth at interior knots", {

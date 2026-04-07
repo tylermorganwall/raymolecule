@@ -8,6 +8,10 @@
 #'
 #' @param scene `rayrender` scene of molecule model.
 #' @param fov Default `NULL`, automatically calculated. Camera field of view.
+#' @param lookat Default `NULL`, automatically calculated as `c(0,0,0)`.
+#' Camera target point.
+#' @param lookfrom Default `NULL`, automatically calculated from the scene
+#' bounds. Camera position.
 #' @param angle Default `c(0,0,0)`. Degrees to rotate the model around the X, Y, and Z axes. If this
 #' is a single number, it will be taken as the Y axis rotation.
 #' @param order_rotation Default `c(1,2,3)`. What order to apply the rotations specified in `angle`.
@@ -73,6 +77,8 @@
 render_model = function(
 	scene,
 	fov = NULL,
+	lookat = NULL,
+	lookfrom = NULL,
 	angle = c(0, 0, 0),
 	order_rotation = c(1, 2, 3),
 	lights = "top",
@@ -158,6 +164,16 @@ render_model = function(
 			180 *
 			2
 	}
+	if (is.null(lookat)) {
+		lookat = c(0, 0, 0)
+	} else {
+		lookat = validate_camera_vector(lookat, "lookat")
+	}
+	if (is.null(lookfrom)) {
+		lookfrom = c(0, 0, widest * 5)
+	} else {
+		lookfrom = validate_camera_vector(lookfrom, "lookfrom")
+	}
 	if (pathtraced) {
 		if (any(angle != 0)) {
 			scene = group_objects(
@@ -206,8 +222,15 @@ render_model = function(
 			scene = scene |>
 				add_object(light)
 		}
-		render_scene(scene = scene, fov = fov, lookfrom = c(0, 0, widest * 5), ...)
+		render_scene(
+			scene = scene,
+			fov = fov,
+			lookat = lookat,
+			lookfrom = lookfrom,
+			...
+		)
 	} else {
+		light = NULL
 		if (is.character(lights)) {
 			if (lights != "none") {
 				if (lights == "top") {
@@ -231,11 +254,19 @@ render_model = function(
 		scene = rotate_mesh(scene, angle = angle, order_rotation = order_rotation)
 		rasterize_scene(
 			scene = scene,
-			lookat = c(0, 0, 0),
+			lookat = lookat,
 			light_info = light,
 			fov = fov,
-			lookfrom = c(0, 0, widest * 5),
+			lookfrom = lookfrom,
 			...
 		)
 	}
+}
+
+#' @keywords internal
+validate_camera_vector = function(vector, argument_name) {
+	if (length(vector) != 3L || any(!is.finite(vector))) {
+		stop(sprintf("%s must be a finite numeric vector of length 3", argument_name))
+	}
+	return(as.numeric(vector))
 }
