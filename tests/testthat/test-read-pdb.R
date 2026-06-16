@@ -1,7 +1,19 @@
 test_that("read_pdb parses a valid single-chain PDB with TER and HETATM", {
   residue_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
-  residue_2 = backbone_residue_lines(residue_1$next_serial, "A", 2, "GLY", c(1.5, 0.1, 0.2))
-  residue_3 = backbone_residue_lines(residue_2$next_serial, "A", 3, "SER", c(3.0, 0.2, 0.5))
+  residue_2 = backbone_residue_lines(
+    residue_1$next_serial,
+    "A",
+    2,
+    "GLY",
+    c(1.5, 0.1, 0.2)
+  )
+  residue_3 = backbone_residue_lines(
+    residue_2$next_serial,
+    "A",
+    3,
+    "SER",
+    c(3.0, 0.2, 0.5)
+  )
 
   lines = c(
     residue_1$lines,
@@ -34,9 +46,21 @@ test_that("read_pdb parses a valid single-chain PDB with TER and HETATM", {
 
 test_that("read_pdb parses multiple chains separated by TER", {
   chain_a_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
-  chain_a_2 = backbone_residue_lines(chain_a_1$next_serial, "A", 2, "GLY", c(1.5, 0.1, 0.2))
+  chain_a_2 = backbone_residue_lines(
+    chain_a_1$next_serial,
+    "A",
+    2,
+    "GLY",
+    c(1.5, 0.1, 0.2)
+  )
   chain_b_1 = backbone_residue_lines(20, "B", 1, "VAL", c(0, 4, 0))
-  chain_b_2 = backbone_residue_lines(chain_b_1$next_serial, "B", 2, "LEU", c(1.5, 4.2, 0.3))
+  chain_b_2 = backbone_residue_lines(
+    chain_b_1$next_serial,
+    "B",
+    2,
+    "LEU",
+    c(1.5, 4.2, 0.3)
+  )
 
   lines = c(
     chain_a_1$lines,
@@ -62,9 +86,21 @@ test_that("read_pdb parses multiple chains separated by TER", {
 
 test_that("read_pdb parses HELIX, SHEET, and SSBOND records", {
   chain_a_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
-  chain_a_2 = backbone_residue_lines(chain_a_1$next_serial, "A", 2, "GLY", c(1.5, 0.1, 0.2))
+  chain_a_2 = backbone_residue_lines(
+    chain_a_1$next_serial,
+    "A",
+    2,
+    "GLY",
+    c(1.5, 0.1, 0.2)
+  )
   chain_b_1 = backbone_residue_lines(20, "B", 1, "VAL", c(0, 4, 0))
-  chain_b_2 = backbone_residue_lines(chain_b_1$next_serial, "B", 2, "LEU", c(1.5, 4.2, 0.3))
+  chain_b_2 = backbone_residue_lines(
+    chain_b_1$next_serial,
+    "B",
+    2,
+    "LEU",
+    c(1.5, 4.2, 0.3)
+  )
 
   lines = c(
     format_helix_line(1, "H1", "ALA", "A", 1, "GLY", "A", 2, length = 2),
@@ -99,9 +135,27 @@ test_that("read_pdb parses HELIX, SHEET, and SSBOND records", {
 
 test_that("read_pdb accepts overlapping HELIX records on the same residues", {
   residue_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
-  residue_2 = backbone_residue_lines(residue_1$next_serial, "A", 2, "GLY", c(1.5, 0.1, 0.2))
-  residue_3 = backbone_residue_lines(residue_2$next_serial, "A", 3, "SER", c(3.0, 0.2, 0.5))
-  residue_4 = backbone_residue_lines(residue_3$next_serial, "A", 4, "THR", c(4.5, 0.4, 0.8))
+  residue_2 = backbone_residue_lines(
+    residue_1$next_serial,
+    "A",
+    2,
+    "GLY",
+    c(1.5, 0.1, 0.2)
+  )
+  residue_3 = backbone_residue_lines(
+    residue_2$next_serial,
+    "A",
+    3,
+    "SER",
+    c(3.0, 0.2, 0.5)
+  )
+  residue_4 = backbone_residue_lines(
+    residue_3$next_serial,
+    "A",
+    4,
+    "THR",
+    c(4.5, 0.4, 0.8)
+  )
 
   lines = c(
     format_helix_line(1, "H1", "ALA", "A", 1, "SER", "A", 3, length = 3),
@@ -123,10 +177,22 @@ test_that("read_pdb accepts overlapping HELIX records on the same residues", {
   expect_equal(model$residues$helix_id, c("H1", "H1", "H1", "H2"))
 })
 
-test_that("read_pdb errors on conflicting HELIX and SHEET annotations", {
+test_that("read_pdb keeps the first secondary-structure assignment on overlaps", {
   residue_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
-  residue_2 = backbone_residue_lines(residue_1$next_serial, "A", 2, "GLY", c(1.5, 0.1, 0.2))
-  residue_3 = backbone_residue_lines(residue_2$next_serial, "A", 3, "SER", c(3.0, 0.2, 0.5))
+  residue_2 = backbone_residue_lines(
+    residue_1$next_serial,
+    "A",
+    2,
+    "GLY",
+    c(1.5, 0.1, 0.2)
+  )
+  residue_3 = backbone_residue_lines(
+    residue_2$next_serial,
+    "A",
+    3,
+    "SER",
+    c(3.0, 0.2, 0.5)
+  )
 
   lines = c(
     format_helix_line(1, "H1", "ALA", "A", 1, "GLY", "A", 2, length = 2),
@@ -141,10 +207,11 @@ test_that("read_pdb errors on conflicting HELIX and SHEET annotations", {
   file = write_pdb_fixture(lines)
   on.exit(unlink(file), add = TRUE)
 
-  expect_error(
-    read_pdb(file),
-    "Conflicting HELIX/SHEET residue annotations are not supported yet"
-  )
+  model = read_pdb(file)
+
+  expect_equal(model$residues$ss_class, c("helix", "helix", "sheet"))
+  expect_equal(model$residues$helix_id, c("H1", "H1", NA))
+  expect_equal(model$residues$sheet_id, c(NA, NA, "S1"))
 })
 
 test_that("read_pdb errors on malformed fixed-width atom lines", {
@@ -154,32 +221,56 @@ test_that("read_pdb errors on malformed fixed-width atom lines", {
   expect_error(read_pdb(file), "Malformed ATOM record")
 })
 
-test_that("read_pdb errors on multiple MODEL records", {
-  residue = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
+test_that("read_pdb parses all MODEL records from coordinate ensembles", {
+  residue_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
+  residue_2 = backbone_residue_lines(1, "A", 1, "ALA", c(10, 0, 0))
   lines = c(
     format_model_line(1),
-    residue$lines,
+    residue_1$lines,
+    format_ter_line(5, "ALA", "A", 1),
     "ENDMDL",
     format_model_line(2),
-    residue$lines,
+    residue_2$lines,
+    format_ter_line(5, "ALA", "A", 1),
     "ENDMDL",
+    format_conect_line(1, c(2)),
     "END"
   )
 
   file = write_pdb_fixture(lines)
   on.exit(unlink(file), add = TRUE)
 
-  expect_error(
-    read_pdb(file),
-    "Multiple MODEL records are not supported yet"
-  )
+  model = read_pdb(file)
+
+  expect_equal(nrow(model$atoms), 8)
+  expect_equal(nrow(model$residues), 2)
+  expect_equal(model$residues$model_index, c(1L, 2L))
+  expect_equal(model$residues$ca_x, c(0, 10))
+  expect_equal(model$atoms$serial, rep(1:4, 2))
+  expect_equal(model$atoms$index, seq_len(8))
+  expect_equal(nrow(model$bonds), 2)
+  expect_equal(model$bonds$model_index, c(1L, 2L))
+  expect_equal(model$bonds$from, c(1L, 5L))
+  expect_equal(model$bonds$to, c(2L, 6L))
 })
 
 test_that("read_pdb can expand biological assemblies from REMARK 350 BIOMT", {
   chain_a_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
-  chain_a_2 = backbone_residue_lines(chain_a_1$next_serial, "A", 2, "GLY", c(1.5, 0.1, 0.2))
+  chain_a_2 = backbone_residue_lines(
+    chain_a_1$next_serial,
+    "A",
+    2,
+    "GLY",
+    c(1.5, 0.1, 0.2)
+  )
   chain_b_1 = backbone_residue_lines(20, "B", 1, "VAL", c(0, 4, 0))
-  chain_b_2 = backbone_residue_lines(chain_b_1$next_serial, "B", 2, "LEU", c(1.5, 4.2, 0.3))
+  chain_b_2 = backbone_residue_lines(
+    chain_b_1$next_serial,
+    "B",
+    2,
+    "LEU",
+    c(1.5, 4.2, 0.3)
+  )
 
   lines = c(
     format_remark350_biomolecule_line(1),
@@ -209,7 +300,10 @@ test_that("read_pdb can expand biological assemblies from REMARK 350 BIOMT", {
   expect_equal(bio_model$chains$chain_id, c("A", "B", "A_2", "B_2"))
   expect_equal(nrow(bio_model$residues), 8)
   expect_equal(nrow(bio_model$atoms), 32)
-  expect_equal(sort(unique(bio_model$residues$chain_id)), c("A", "A_2", "B", "B_2"))
+  expect_equal(
+    sort(unique(bio_model$residues$chain_id)),
+    c("A", "A_2", "B", "B_2")
+  )
   expect_equal(
     bio_model$residues$ca_x[bio_model$residues$chain_id == "A_2"][1],
     bio_model$residues$ca_x[bio_model$residues$chain_id == "A"][1] + 10,

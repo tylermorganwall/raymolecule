@@ -733,7 +733,7 @@ default_ribbon_texture = local({
 			graphics::plot.new()
 			graphics::plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
 			graphics::rasterImage(
-				image = as.raster(matrix(palette, nrow = 1L)),
+				image = grDevices::as.raster(matrix(palette, nrow = 1L)),
 				xleft = 0,
 				ybottom = 0,
 				xright = 1,
