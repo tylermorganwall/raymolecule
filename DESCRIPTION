@@ -8,11 +8,12 @@ Maintainer: Tyler Morgan-Wall <tylermw@gmail.com>
 Description: Downloads and parses 'SDF' (Structural Description Format) and 'PDB' (Protein Database) files for 3D rendering.
 License: GPL-3
 Encoding: UTF-8
-Imports:
-    rayrender (>= 0.39.1),
+Depends: R (>= 4.1)
+Imports: 
+    rayrender (>= 0.41.3),
     PeriodicTable, 
     httr,
-    rayvertex (>= 0.14.0)
+    rayvertex (>= 0.15.1)
 Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
