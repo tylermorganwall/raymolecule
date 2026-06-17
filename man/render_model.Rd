@@ -6,6 +6,8 @@
 \usage{
 render_model(
   scene,
+  width = 800,
+  height = 800,
   fov = NULL,
   lookat = NULL,
   lookfrom = NULL,
@@ -18,6 +20,10 @@ render_model(
 }
 \arguments{
 \item{scene}{`rayrender` scene of molecule model.}
+
+\item{width}{Default `800`. Image width in pixels.}
+
+\item{height}{Default `800`. Image height in pixels.}
 
 \item{fov}{Default `NULL`, automatically calculated. Camera field of view.}
 

@@ -7,39 +7,39 @@
 #' @return List giving the atom locations and the connections between atoms.
 #' @export
 #'
-#' @examples
-#' if(run_documentation()) {
+#'@examplesIf interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")
+#' 
 #' get_molecule("caffeine") |>
 #'   generate_full_scene() |>
 #'   render_model()
-#' }
-#' if(run_documentation()) {
+#' 
+#' 
 #' #estradiol (aka estrogen)
 #' get_molecule(5757) |>
 #'   generate_full_scene() |>
 #'   render_model()
-#' }
-#' if(run_documentation()) {
+#' 
+#' 
 #' get_molecule("testosterone") |>
 #'   generate_full_scene() |>
 #'   render_model()
-#' }
-#' if(run_documentation()) {
+#' 
+#' 
 #' get_molecule("aspirin") |>
 #'   generate_full_scene() |>
 #'   render_model()
-#' }
-#' if(run_documentation()) {
+#' 
+#' 
 #' get_molecule("rutoside") |>
 #'   generate_full_scene() |>
 #'   render_model()
-#' }
-#' if(run_documentation()) {
+#' 
+#' 
 #' #If the 3D SDF doesn't exist, this function will pull the 2D SDF and inform the user
 #' get_molecule("cyanocobalamin") |>
 #'   generate_full_scene() |>
 #'   render_model()
-#' }
+#' 
 get_molecule = function(molecule) {
 	#Check for 3D model first
 	if (is.numeric(molecule)) {

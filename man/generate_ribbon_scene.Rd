@@ -11,6 +11,7 @@ generate_ribbon_scene(
   z = 0,
   scale = 1,
   center = TRUE,
+  model_id = NA_integer_,
   pathtrace = TRUE,
   ribbon_width = 1.6,
   ribbon_thickness = 0.25,
@@ -24,7 +25,10 @@ generate_ribbon_scene(
   show_hetero_atoms = TRUE,
   show_hetero_bonds = TRUE,
   show_waters = FALSE,
-  use_vertex_normals = FALSE
+  show_protein_atoms = FALSE,
+  show_protein_bonds = FALSE,
+  use_vertex_normals = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -39,6 +43,9 @@ generate_ribbon_scene(
 \item{scale}{Default `1`. Amount to scale the ribbon geometry.}
 
 \item{center}{Default `TRUE`. Centers the bounding box of the model.}
+
+\item{model_id}{Default `NA_integer_`. PDB `MODEL` identifier(s) to render.
+The default `NA` renders all parsed models in the ensemble.}
 
 \item{pathtrace}{Default `TRUE`. If `FALSE`, a `rayvertex` mesh scene is
 returned. If `TRUE`, a `rayrender` scene is returned from the same mesh
@@ -80,9 +87,18 @@ shown hetero atoms as a ball-and-stick overlay alongside the ribbon.}
 \item{show_waters}{Default `FALSE`. If `TRUE`, include water `HETATM`
 records when `show_hetero_atoms = TRUE` and `show_hetero_bonds = TRUE`.}
 
+\item{show_protein_atoms}{Default `FALSE`. If `TRUE`, display protein
+`ATOM` records as small spheres alongside the ribbon.}
+
+\item{show_protein_bonds}{Default `FALSE`. If `TRUE`, display inferred
+covalent bonds between protein `ATOM` records as a thin stick overlay.}
+
 \item{use_vertex_normals}{Default `FALSE`. If `TRUE`, attach the ribbon
 mesh's swept vertex normals. If `FALSE`, raster scenes omit explicit
 normals and pathtraced scenes use flat face normals.}
+
+\item{verbose}{Default `FALSE`. If `TRUE`, report the PDB name and model
+identifiers being rendered.}
 }
 \value{
 Rayrender/rayvertex scene containing a ribbon mesh.

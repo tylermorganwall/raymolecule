@@ -254,6 +254,41 @@ test_that("read_pdb parses all MODEL records from coordinate ensembles", {
   expect_equal(model$bonds$to, c(2L, 6L))
 })
 
+test_that("read_pdb stores metadata and reports verbose summaries", {
+  residue_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
+  residue_2 = backbone_residue_lines(1, "A", 1, "ALA", c(10, 0, 0))
+  header = make_pdb_line()
+  header = set_pdb_field(header, 1, 6, "HEADER")
+  header = set_pdb_field(header, 11, 50, "TEST STRUCTURE")
+  header = set_pdb_field(header, 51, 59, "01-JAN-00")
+  header = set_pdb_field(header, 63, 66, "9TST")
+  lines = c(
+    header,
+    "TITLE     TEST PROTEIN ENSEMBLE",
+    "EXPDTA    SOLUTION NMR",
+    "NUMMDL    2",
+    format_model_line(1),
+    residue_1$lines,
+    "ENDMDL",
+    format_model_line(2),
+    residue_2$lines,
+    "ENDMDL",
+    "END"
+  )
+
+  file = write_pdb_fixture(lines)
+  on.exit(unlink(file), add = TRUE)
+
+  expect_message(
+    model <- read_pdb(file, verbose = TRUE),
+    "Read TEST PROTEIN ENSEMBLE PDB models \\[1-2\\]"
+  )
+  expect_equal(model$metadata$pdb_id, "9TST")
+  expect_equal(model$metadata$name, "TEST PROTEIN ENSEMBLE")
+  expect_equal(model$metadata$experiment, "SOLUTION NMR")
+  expect_equal(model$metadata$declared_model_count, 2L)
+})
+
 test_that("read_pdb can expand biological assemblies from REMARK 350 BIOMT", {
   chain_a_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
   chain_a_2 = backbone_residue_lines(

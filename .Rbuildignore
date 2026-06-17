@@ -14,3 +14,15 @@
 ^README_cache$
 ^README_files$
 ^man/figures$
+^pdb_sample$
+^pdb_sample/
+^pdb_multiview$
+^pdb_multiview/
+^pdb_animation$
+^pdb_animation/
+^scripts$
+^scripts/
+^tests/helper-dl-pdb[.]R$
+^Rplots[.]pdf$
+^tests/testthat/Rplots[.]pdf$
+^raymolecule_[^/]*[.]tar[.]gz$

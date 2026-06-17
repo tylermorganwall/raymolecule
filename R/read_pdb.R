@@ -16,6 +16,8 @@
 #'   transforms.
 #' @param assembly_id Default `1L`. Biological assembly identifier to use when
 #'   `assembly = "biological"`.
+#' @param verbose Default `FALSE`. If `TRUE`, report parsed PDB metadata and
+#'   atom/residue/model counts.
 #'
 #' @return List giving the parsed PDB model.
 #' @export
@@ -36,9 +38,13 @@ read_pdb = function(
   atom = TRUE,
   nsr = TRUE,
   assembly = c("asymmetric_unit", "biological"),
-  assembly_id = 1L
+  assembly_id = 1L,
+  verbose = FALSE
 ) {
   assembly = match.arg(assembly)
+  if (!is.logical(verbose) || length(verbose) != 1L || is.na(verbose)) {
+    stop("verbose must be TRUE or FALSE")
+  }
   if (
     length(assembly_id) != 1L ||
       is.na(assembly_id) ||
@@ -51,6 +57,7 @@ read_pdb = function(
 
   #Read in all the lines first
   lines = readLines(filename, warn = FALSE)
+  metadata = parse_pdb_metadata(lines, filename)
   #Parse the file
   records = parse_pdb_records(lines)
   if (identical(assembly, "biological")) {
@@ -86,7 +93,7 @@ read_pdb = function(
     drop = FALSE
   ]
 
-  return(list(
+  model = list(
     atoms = atoms,
     bonds = records$bonds,
     residues = records$residues,
@@ -98,8 +105,203 @@ read_pdb = function(
     assembly_mode = assembly,
     assembly_id = if (identical(assembly, "biological")) assembly_id else
       NA_integer_,
+    metadata = metadata,
     pdb_type = "pdb"
-  ))
+  )
+  if (verbose) {
+    message(read_pdb_summary_message(model))
+  }
+
+  return(model)
+}
+
+#' @keywords internal
+parse_pdb_metadata = function(lines, filename = NA_character_) {
+  header_line = lines[startsWith(lines, "HEADER")]
+  header_line = if (length(header_line) > 0L) header_line[[1]] else ""
+  pdb_id = trimws(substr(header_line, 63L, 66L))
+  classification = trimws(substr(header_line, 11L, 50L))
+  deposition_date = trimws(substr(header_line, 51L, 59L))
+
+  title = parse_pdb_continuation_text(lines, "TITLE", 11L, 80L)
+  experiment = parse_pdb_single_record_text(lines, "EXPDTA", 11L, 80L)
+  declared_model_text = parse_pdb_single_record_text(lines, "NUMMDL", 11L, 14L)
+  declared_model_count = suppressWarnings(as.integer(declared_model_text))
+
+  name = title
+  if (!nzchar(name) && nzchar(pdb_id)) {
+    name = pdb_id
+  }
+  if (!nzchar(name) && !is.na(filename)) {
+    name = tools::file_path_sans_ext(basename(filename))
+  }
+
+  list(
+    filename = filename,
+    pdb_id = if (nzchar(pdb_id)) pdb_id else NA_character_,
+    name = name,
+    title = if (nzchar(title)) title else NA_character_,
+    classification = if (nzchar(classification)) classification else
+      NA_character_,
+    deposition_date = if (nzchar(deposition_date)) deposition_date else
+      NA_character_,
+    experiment = if (nzchar(experiment)) experiment else NA_character_,
+    declared_model_count = declared_model_count
+  )
+}
+
+#' @keywords internal
+parse_pdb_single_record_text = function(lines, record, start, end) {
+  record_lines = lines[startsWith(lines, record)]
+  if (length(record_lines) == 0L) {
+    return("")
+  }
+  trimws(substr(record_lines[[1]], start, end))
+}
+
+#' @keywords internal
+parse_pdb_continuation_text = function(lines, record, start, end) {
+  record_lines = lines[startsWith(lines, record)]
+  if (length(record_lines) == 0L) {
+    return("")
+  }
+
+  title = paste(
+    trimws(substr(record_lines, start, end)),
+    collapse = " "
+  )
+  trimws(gsub("[[:space:]]+", " ", title))
+}
+
+#' @keywords internal
+read_pdb_summary_message = function(model) {
+  metadata = model$metadata
+  lines = sprintf(
+    "Read %s PDB models %s",
+    pdb_display_name(model),
+    format_pdb_model_set(pdb_model_labels(model))
+  )
+  if (!is.na(metadata$pdb_id)) {
+    lines = c(lines, sprintf("  PDB ID: %s", metadata$pdb_id))
+  }
+  if (!is.na(metadata$experiment)) {
+    lines = c(lines, sprintf("  Experiment: %s", metadata$experiment))
+  }
+  if (!is.na(metadata$declared_model_count)) {
+    lines = c(
+      lines,
+      sprintf("  Declared models: %d", metadata$declared_model_count)
+    )
+  }
+  lines = c(
+    lines,
+    sprintf(
+      "  Parsed: %d atoms, %d residues, %d chains, %d bonds",
+      nrow(model$atoms),
+      nrow(model$residues),
+      nrow(model$chains),
+      nrow(model$bonds)
+    )
+  )
+  if (!identical(model$assembly_mode, "asymmetric_unit")) {
+    lines = c(
+      lines,
+      sprintf(
+        "  Assembly: %s %d",
+        model$assembly_mode,
+        model$assembly_id
+      )
+    )
+  }
+
+  paste(lines, collapse = "\n")
+}
+
+#' @keywords internal
+pdb_display_name = function(model) {
+  if (
+    !is.null(model$metadata) &&
+      !is.na(model$metadata$name) &&
+      nzchar(model$metadata$name)
+  ) {
+    return(model$metadata$name)
+  }
+  if (
+    !is.null(model$metadata) &&
+      !is.na(model$metadata$pdb_id) &&
+      nzchar(model$metadata$pdb_id)
+  ) {
+    return(model$metadata$pdb_id)
+  }
+  "unknown"
+}
+
+#' @keywords internal
+pdb_model_labels = function(model) {
+  source = NULL
+  if (!is.null(model$residues) && nrow(model$residues) > 0L) {
+    source = model$residues
+  } else if (!is.null(model$atoms) && nrow(model$atoms) > 0L) {
+    source = model$atoms
+  }
+  if (is.null(source) || !"model_index" %in% names(source)) {
+    return(NA_integer_)
+  }
+
+  source = source[order(source$model_index), , drop = FALSE]
+  model_rows = !duplicated(source$model_index)
+  model_ids = source$model_id[model_rows]
+  model_indices = source$model_index[model_rows]
+  if (all(is.na(model_ids))) {
+    return(model_indices)
+  }
+  ifelse(is.na(model_ids), model_indices, model_ids)
+}
+
+#' @keywords internal
+format_pdb_model_set = function(model_ids) {
+  model_ids = as.integer(model_ids)
+  model_ids = model_ids[!is.na(model_ids)]
+  if (length(model_ids) == 0L) {
+    return("[unknown]")
+  }
+  model_ids = sort(unique(model_ids))
+  runs = list()
+  run_start = model_ids[[1]]
+  previous = model_ids[[1]]
+  counter = 1L
+
+  if (length(model_ids) > 1L) {
+    for (model_id in model_ids[-1]) {
+      if (model_id == previous + 1L) {
+        previous = model_id
+        next
+      }
+      runs[[counter]] = c(run_start, previous)
+      counter = counter + 1L
+      run_start = model_id
+      previous = model_id
+    }
+  }
+  runs[[counter]] = c(run_start, previous)
+
+  paste0(
+    "[",
+    paste(
+      vapply(
+        runs,
+        function(run) {
+          if (identical(run[[1]], run[[2]])) {
+            return(as.character(run[[1]]))
+          }
+          sprintf("%d-%d", run[[1]], run[[2]])
+        },
+        character(1)
+      ),
+      collapse = ", "
+    ),
+    "]"
+  )
 }
 
 #' @keywords internal

@@ -9,7 +9,8 @@ read_pdb(
   atom = TRUE,
   nsr = TRUE,
   assembly = c("asymmetric_unit", "biological"),
-  assembly_id = 1L
+  assembly_id = 1L,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -27,6 +28,9 @@ transforms.}
 
 \item{assembly_id}{Default `1L`. Biological assembly identifier to use when
 `assembly = "biological"`.}
+
+\item{verbose}{Default `FALSE`. If `TRUE`, report parsed PDB metadata and
+atom/residue/model counts.}
 }
 \value{
 List giving the parsed PDB model.
