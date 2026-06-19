@@ -1497,7 +1497,7 @@ score_helix_axis = function(points, axis) {
     return(Inf)
   }
 
-  sd(radius) / mean(radius)
+  stats::sd(radius) / mean(radius)
 }
 
 #' @keywords internal

@@ -1002,7 +1002,7 @@ normalize_ribbon_display_bonds = function(bonds) {
     ifelse(is.na(bonds$model_index), "", bonds$model_index),
     sep = "\r"
   )
-  max_number = ave(bonds$number, bond_key, FUN = max)
+  max_number = stats::ave(bonds$number, bond_key, FUN = max)
   keep_bond = !duplicated(bond_key)
   bonds = bonds[keep_bond, , drop = FALSE]
   bonds$number = max_number[keep_bond]
