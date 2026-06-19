@@ -21,7 +21,7 @@ bond scene generators. Biological assemblies can be generated from
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">raymolecule</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.8.0</span>
       </span>
     </div>
 
@@ -74,7 +74,8 @@ bond scene generators. Biological assemblies can be generated from
 <span>  atom <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  nsr <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  assembly <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"asymmetric_unit"</span>, <span class="st">"biological"</span><span class="op">)</span>,</span>
-<span>  assembly_id <span class="op">=</span> <span class="fl">1L</span></span>
+<span>  assembly_id <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -83,7 +84,9 @@ bond scene generators. Biological assemblies can be generated from
 
 
 <dl><dt id="arg-filename">filename<a class="anchor" aria-label="anchor" href="#arg-filename"></a></dt>
-<dd><p>Path to the PDB file.</p></dd>
+<dd><p>Path to the PDB file, or a protein name/4-character PDB ID
+to download from RCSB when it is not an existing file and does not end in
+`.pdb`.</p></dd>
 
 
 <dt id="arg-atom">atom<a class="anchor" aria-label="anchor" href="#arg-atom"></a></dt>
@@ -106,6 +109,11 @@ transforms.</p></dd>
 <dd><p>Default `1L`. Biological assembly identifier to use when
 `assembly = "biological"`.</p></dd>
 
+
+<dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
+<dd><p>Default `FALSE`. If `TRUE`, report parsed PDB metadata and
+atom/residue/model counts.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
@@ -114,16 +122,59 @@ transforms.</p></dd>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># This assumes a hypothetical PDB file in your working directory:</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"3nir.pdb"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="fu">read_pdb</span><span class="op">(</span><span class="st">"3nir.pdb"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>    <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>    <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Start with a local PDB file and the deposited asymmetric unit. Both ATOM</span></span></span>
+<span class="r-in"><span><span class="co"># and HETATM records are kept, and verbose output prints parse metadata.</span></span></span>
+<span class="r-in"><span><span class="va">pdb_file</span> <span class="op">=</span> <span class="fu"><a href="download_pdb.html">download_pdb</a></span><span class="op">(</span><span class="st">"2w5o"</span>, out_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">model</span> <span class="op">=</span> <span class="fu">read_pdb</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">pdb_file</span>,</span></span>
+<span class="r-in"><span>  atom <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>  nsr <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>  assembly <span class="op">=</span> <span class="st">"asymmetric_unit"</span>,</span></span>
+<span class="r-in"><span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Read COMPLEX STRUCTURE OF THE GH93 ALPHA-L-ARABINOFURANOSIDASE OF FUSARIUM GRAMINEARUM WITH ARABINOBIOSE PDB models [1]</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   PDB ID: 2W5O</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Experiment: X-RAY DIFFRACTION</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Parsed: 3231 atoms, 354 residues, 1 chains, 182 bonds</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="fu">read_pdb</span><span class="op">(</span><span class="st">"3nir.pdb"</span>, assembly <span class="op">=</span> <span class="st">"biological"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>    <span class="fu"><a href="generate_ribbon_scene.html">generate_ribbon_scene</a></span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>    <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span><span class="va">model</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="generate_ribbon_scene.html">generate_ribbon_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    pathtrace <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    width <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    height <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    background <span class="op">=</span> <span class="st">"grey12"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-plt img"><img src="read_pdb-1.png" alt="" width="1600" height="1600"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># The biological assembly applies REMARK 350 BIOMT transforms when present.</span></span></span>
+<span class="r-in"><span><span class="va">biological_model</span> <span class="op">=</span> <span class="fu">read_pdb</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">pdb_file</span>,</span></span>
+<span class="r-in"><span>  assembly <span class="op">=</span> <span class="st">"biological"</span>,</span></span>
+<span class="r-in"><span>  assembly_id <span class="op">=</span> <span class="fl">1L</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># This ligand-only parse keeps HETATM records and drops standard protein</span></span></span>
+<span class="r-in"><span><span class="co"># atoms, which is useful for ligand and ion views.</span></span></span>
+<span class="r-in"><span><span class="va">ligand_file</span> <span class="op">=</span> <span class="fu"><a href="download_pdb.html">download_pdb</a></span><span class="op">(</span><span class="st">"5hsv"</span>, out_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">ligand_model</span> <span class="op">=</span> <span class="fu">read_pdb</span><span class="op">(</span><span class="va">ligand_file</span>, atom <span class="op">=</span> <span class="cn">FALSE</span>, nsr <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">ligand_model</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span>force_single_bonds <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">TRUE</span>, width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="read_pdb-2.png" alt="" width="1600" height="1600"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># A bare PDB ID is downloaded automatically when no matching local file is</span></span></span>
+<span class="r-in"><span><span class="co"># found. Verbose output reports the multi-model ensemble.</span></span></span>
+<span class="r-in"><span><span class="va">old_dir</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">setwd</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">ensemble_model</span> <span class="op">=</span> <span class="fu">read_pdb</span><span class="op">(</span><span class="st">"1co1"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Downloaded RCSB PDB 1CO1 for '1co1' to ./1co1.pdb</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Read FOLD OF THE CBFA PDB models [1-10]</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   PDB ID: 1CO1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Experiment: SOLUTION NMR</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Declared models: 10</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Parsed: 17880 atoms, 1150 residues, 10 chains, 0 bonds</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">setwd</a></span><span class="op">(</span><span class="va">old_dir</span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>
   </div>

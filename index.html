@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">raymolecule</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.8.0</span>
       </span>
     </div>
 
@@ -79,7 +79,7 @@
 <p><img src="reference/figures/caff.gif"></p>
 <!-- badges: start -->
 
-<p><code>raymolecule</code> is an R package to parse and render molecules in 3D. Rendering is powered by two packages: <a href="https://www.rayrender.net/" class="external-link">rayrender</a> package, a pathtracer for R, and <a href="https://www.rayvertex.com/" class="external-link">rayvertex</a>, a rasterizer for R. <code>raymolecule</code> currently supports and parses SDF (structure-data file) and PDB (Protein Data Bank) files and returns a <code>rayrender</code> scene, which we then pathtrace and visualize in R. This initial release of the package only supports visualizing atoms and bonds.</p>
+<p><code>raymolecule</code> is an R package to parse and render molecules in 3D. Rendering is powered by two packages: <a href="https://www.rayrender.net/" class="external-link">rayrender</a> package, a pathtracer for R, and <a href="https://www.rayvertex.com/" class="external-link">rayvertex</a>, a rasterizer for R. <code>raymolecule</code> supports SDF (structure-data file) and PDB (Protein Data Bank) files and can render atom/bond models, ligand overlays, and protein ribbon cartoons.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -154,23 +154,83 @@
 <span><span class="co">#&gt;   ..$ from  : num [1:47] 1 1 2 2 3 3 3 3 4 4 ...</span></span>
 <span><span class="co">#&gt;   ..$ to    : num [1:47] 7 40 20 44 4 7 8 13 5 9 ...</span></span>
 <span><span class="co">#&gt;   ..$ number: num [1:47] 1 1 1 1 1 1 1 1 1 1 ...</span></span></code></pre></div>
-<p>We can then pass the list from <code>get_example_molecule() |&gt; read_sdf()</code> or from <code><a href="reference/get_molecule.html">get_molecule()</a></code> to the <code><a href="reference/generate_full_scene.html">generate_full_scene()</a></code>, <code><a href="reference/generate_atom_scene.html">generate_atom_scene()</a></code>, or <code><a href="reference/generate_bond_scene.html">generate_bond_scene()</a></code> functions to convert this representation to a rayrender/rayvertex scene. This can then be passed on the <code><a href="reference/render_model.html">render_model()</a></code> function, which will call rayrender’s <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">render_scene()</a></code> or rayvertex’s <code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rasterize_scene()</a></code> functions to render it. This function automatically ensures the molecule is centered and in frame, and sets up lighting, and can accept arguments to rotate the molecule. For more rendering options, see <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">rayrender::render_scene()</a></code> and <code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rayvertex::rasterize_scene()</a></code>.</p>
+<p>We can then pass the list from <code>get_example_molecule() |&gt; read_sdf()</code> or from <code><a href="reference/get_molecule.html">get_molecule()</a></code> to the <code><a href="reference/generate_full_scene.html">generate_full_scene()</a></code>, <code><a href="reference/generate_atom_scene.html">generate_atom_scene()</a></code>, or <code><a href="reference/generate_bond_scene.html">generate_bond_scene()</a></code> functions to convert this representation to a raymesh scene. This can then be passed on the <code><a href="reference/render_model.html">render_model()</a></code> function, which will call rayrender’s <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">render_scene()</a></code> or rayvertex’s <code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rasterize_scene()</a></code> functions depending on <code>pathtrace</code>. This function automatically ensures the molecule is centered and in frame, sets up lighting, and can accept arguments to rotate the molecule. For more rendering options, see <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">rayrender::render_scene()</a></code> and <code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rayvertex::rasterize_scene()</a></code>.</p>
+<p>The atom-only and bond-only builders are useful when you want to inspect the simpler pieces of a molecule before rendering a full ball-and-stick model.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#Render atoms only for a small built-in molecule</span></span>
+<span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"benzene"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/generate_atom_scene.html">generate_atom_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span>
+<span><span class="co">#&gt; --------------------------Interactive Mode Controls---------------------------</span></span>
+<span><span class="co">#&gt; W/A/S/D: Horizontal Movement: | Q/Z: Vertical Movement | Up/Down: Adjust FOV | ESC: Close</span></span>
+<span><span class="co">#&gt; Left/Right: Adjust Aperture  | 1/2: Adjust Focal Distance | 3/4: Rotate Environment Light </span></span>
+<span><span class="co">#&gt; P: Print Camera Info | R: Reset Camera |  TAB: Toggle Orbit Mode |  E/C: Adjust Step Size</span></span>
+<span><span class="co">#&gt; K: Save Keyframe | L: Reset Camera to Last Keyframe (if set) | F: Toggle Fast Travel Mode</span></span>
+<span><span class="co">#&gt; Left Mouse Click: Change Look At (new focal distance) | Right Mouse Click: Change Look At</span></span>
+<span><span class="co">#&gt; ]/[: Adjust Preview Exposure</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-atom-bond-scenes-1.png" alt="plot of chunk atom-bond-scenes" width="100%"><p class="caption">
+plot of chunk atom-bond-scenes
+</p>
+</div>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="co">#Render only the bond geometry for a simple built-in molecule</span></span>
+<span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"cinnemaldehyde"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/generate_bond_scene.html">generate_bond_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span>
+<span><span class="co">#&gt; --------------------------Interactive Mode Controls---------------------------</span></span>
+<span><span class="co">#&gt; W/A/S/D: Horizontal Movement: | Q/Z: Vertical Movement | Up/Down: Adjust FOV | ESC: Close</span></span>
+<span><span class="co">#&gt; Left/Right: Adjust Aperture  | 1/2: Adjust Focal Distance | 3/4: Rotate Environment Light </span></span>
+<span><span class="co">#&gt; P: Print Camera Info | R: Reset Camera |  TAB: Toggle Orbit Mode |  E/C: Adjust Step Size</span></span>
+<span><span class="co">#&gt; K: Save Keyframe | L: Reset Camera to Last Keyframe (if set) | F: Toggle Fast Travel Mode</span></span>
+<span><span class="co">#&gt; Left Mouse Click: Change Look At (new focal distance) | Right Mouse Click: Change Look At</span></span>
+<span><span class="co">#&gt; ]/[: Adjust Preview Exposure</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-atom-bond-scenes-2.png" alt="plot of chunk atom-bond-scenes" width="100%"><p class="caption">
+plot of chunk atom-bond-scenes
+</p>
+</div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Specify a width, height, and number of samples for the image (more samples == less noise)</span></span>
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"caffeine"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-5-1.png" width="100%"></p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span>
+<span><span class="co">#&gt; --------------------------Interactive Mode Controls---------------------------</span></span>
+<span><span class="co">#&gt; W/A/S/D: Horizontal Movement: | Q/Z: Vertical Movement | Up/Down: Adjust FOV | ESC: Close</span></span>
+<span><span class="co">#&gt; Left/Right: Adjust Aperture  | 1/2: Adjust Focal Distance | 3/4: Rotate Environment Light </span></span>
+<span><span class="co">#&gt; P: Print Camera Info | R: Reset Camera |  TAB: Toggle Orbit Mode |  E/C: Adjust Step Size</span></span>
+<span><span class="co">#&gt; K: Save Keyframe | L: Reset Camera to Last Keyframe (if set) | F: Toggle Fast Travel Mode</span></span>
+<span><span class="co">#&gt; Left Mouse Click: Change Look At (new focal distance) | Right Mouse Click: Change Look At</span></span>
+<span><span class="co">#&gt; ]/[: Adjust Preview Exposure</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-unnamed-chunk-5-1.png" alt="plot of chunk unnamed-chunk-5" width="100%"><p class="caption">
+plot of chunk unnamed-chunk-5
+</p>
+</div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co">#Light from both bottom and top</span></span>
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"cinnemaldehyde"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>lights <span class="op">=</span> <span class="st">"both"</span>, width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-5-2.png" width="100%"></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>lights <span class="op">=</span> <span class="st">"both"</span>, width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span>
+<span><span class="co">#&gt; --------------------------Interactive Mode Controls---------------------------</span></span>
+<span><span class="co">#&gt; W/A/S/D: Horizontal Movement: | Q/Z: Vertical Movement | Up/Down: Adjust FOV | ESC: Close</span></span>
+<span><span class="co">#&gt; Left/Right: Adjust Aperture  | 1/2: Adjust Focal Distance | 3/4: Rotate Environment Light </span></span>
+<span><span class="co">#&gt; P: Print Camera Info | R: Reset Camera |  TAB: Toggle Orbit Mode |  E/C: Adjust Step Size</span></span>
+<span><span class="co">#&gt; K: Save Keyframe | L: Reset Camera to Last Keyframe (if set) | F: Toggle Fast Travel Mode</span></span>
+<span><span class="co">#&gt; Left Mouse Click: Change Look At (new focal distance) | Right Mouse Click: Change Look At</span></span>
+<span><span class="co">#&gt; ]/[: Adjust Preview Exposure</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-unnamed-chunk-5-2.png" alt="plot of chunk unnamed-chunk-5" width="100%"><p class="caption">
+plot of chunk unnamed-chunk-5
+</p>
+</div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co">#Rotate the molecule and add a non-zero aperture setting to get depth of field effect</span></span>
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"penicillin"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -184,18 +244,34 @@
 <span>        angle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">30</span>, <span class="fl">0</span><span class="op">)</span>,</span>
 <span>        aperture <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>        fov <span class="op">=</span> <span class="fl">22</span></span>
-<span>    <span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-5-3.png" width="100%"> We can use <code>rayvertex</code> to render images much more quickly and noise free, as well as include a toon cel-shading effect.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<span>    <span class="op">)</span></span>
+<span><span class="co">#&gt; --------------------------Interactive Mode Controls---------------------------</span></span>
+<span><span class="co">#&gt; W/A/S/D: Horizontal Movement: | Q/Z: Vertical Movement | Up/Down: Adjust FOV | ESC: Close</span></span>
+<span><span class="co">#&gt; Left/Right: Adjust Aperture  | 1/2: Adjust Focal Distance | 3/4: Rotate Environment Light </span></span>
+<span><span class="co">#&gt; P: Print Camera Info | R: Reset Camera |  TAB: Toggle Orbit Mode |  E/C: Adjust Step Size</span></span>
+<span><span class="co">#&gt; K: Save Keyframe | L: Reset Camera to Last Keyframe (if set) | F: Toggle Fast Travel Mode</span></span>
+<span><span class="co">#&gt; Left Mouse Click: Change Look At (new focal distance) | Right Mouse Click: Change Look At</span></span>
+<span><span class="co">#&gt; ]/[: Adjust Preview Exposure</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-unnamed-chunk-5-3.png" alt="plot of chunk unnamed-chunk-5" width="100%"><p class="caption">
+plot of chunk unnamed-chunk-5
+</p>
+</div>
+<p>We can use <code>rayvertex</code> to render images much more quickly and noise free, as well as include a toon cel-shading effect.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.rayvertex.com" class="external-link">rayvertex</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">#Render a basic example with rayvertex</span></span>
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"tubocurarine_chloride"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, background <span class="op">=</span> <span class="st">"grey66"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-6-1.png" width="100%"></p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">FALSE</span>, width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, background <span class="op">=</span> <span class="st">"grey66"</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-unnamed-chunk-6-1.png" alt="plot of chunk unnamed-chunk-6" width="100%"><p class="caption">
+plot of chunk unnamed-chunk-6
+</p>
+</div>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co">#Customize the material with toon shading</span></span>
 <span><span class="va">shiny_toon_material</span> <span class="op">=</span> <span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span></span>
@@ -206,18 +282,22 @@
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"morphine"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span></span>
-<span>        pathtrace <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>        material_vertex <span class="op">=</span> <span class="va">shiny_toon_material</span></span>
 <span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, background <span class="op">=</span> <span class="st">"grey66"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-6-2.png" width="100%"></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">FALSE</span>, width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, background <span class="op">=</span> <span class="st">"grey66"</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-unnamed-chunk-6-2.png" alt="plot of chunk unnamed-chunk-6" width="100%"><p class="caption">
+plot of chunk unnamed-chunk-6
+</p>
+</div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co">#Customize the lights with rayvertex</span></span>
 <span><span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"skatole"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/generate_full_scene.html">generate_full_scene</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span></span>
+<span>        pathtrace <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>        width <span class="op">=</span> <span class="fl">800</span>,</span>
 <span>        height <span class="op">=</span> <span class="fl">800</span>,</span>
 <span>        angle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">30</span>, <span class="fl">0</span><span class="op">)</span>,</span>
@@ -225,10 +305,19 @@
 <span>        lights <span class="op">=</span> <span class="fu"><a href="https://www.rayvertex.com/reference/directional_light.html" class="external-link">directional_light</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>            <span class="fu"><a href="https://www.rayvertex.com/reference/add_light.html" class="external-link">add_light</a></span><span class="op">(</span><span class="fu"><a href="https://www.rayvertex.com/reference/directional_light.html" class="external-link">directional_light</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="op">-</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span>, color <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-6-3.png" width="100%"></p>
-<p>You can turn off lighting in <code><a href="reference/render_model.html">render_model()</a></code> and customize the scene (adding different objects or lights) by using rayrender’s <code><a href="http://www.rayrender.net/reference/add_object.html" class="external-link">add_object()</a></code> function or rayvertex’s <code><a href="https://www.rayvertex.com/reference/add_shape.html" class="external-link">add_shape()</a></code> function. If you use <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">rayrender::render_scene()</a></code>/<code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rayvertex::rasterize_scene()</a></code> instead of <code><a href="reference/render_model.html">render_model()</a></code>, you have to set up the camera position and field of view yourself.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="figure">
+<img src="reference/figures/README-unnamed-chunk-6-3.png" alt="plot of chunk unnamed-chunk-6" width="100%"><p class="caption">
+plot of chunk unnamed-chunk-6
+</p>
+</div>
+<p>You can turn off lighting in <code><a href="reference/render_model.html">render_model()</a></code> and customize the rendered output by using the lower-level rayrender or rayvertex APIs directly. If you use <code><a href="http://www.rayrender.net/reference/render_scene.html" class="external-link">rayrender::render_scene()</a></code>/<code><a href="https://www.rayvertex.com/reference/rasterize_scene.html" class="external-link">rayvertex::rasterize_scene()</a></code> instead of <code><a href="reference/render_model.html">render_model()</a></code>, you have to set up the camera position and field of view yourself.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.rayrender.net" class="external-link">rayrender</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'rayrender'</span></span>
+<span><span class="co">#&gt; The following object is masked from 'package:rayvertex':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     r_obj</span></span>
 <span></span>
 <span><span class="va">buckyball</span> <span class="op">=</span> <span class="fu"><a href="reference/get_example_molecule.html">get_example_molecule</a></span><span class="op">(</span><span class="st">"buckyball"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="reference/read_sdf.html">read_sdf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -265,10 +354,10 @@
 <span>        samples <span class="op">=</span> <span class="fl">64</span>,</span>
 <span>        fov <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>        aperture <span class="op">=</span> <span class="fl">1</span></span>
-<span>    <span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-7-1.png" width="100%"></p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span>    <span class="op">)</span></span>
+<span><span class="co">#&gt; Error in `rbind()`:</span></span>
+<span><span class="co">#&gt; ! numbers of columns of arguments do not match</span></span>
+<span></span>
 <span><span class="co">#Generate ground underneath the model and use a light to cast a shadow</span></span>
 <span><span class="fu"><a href="http://www.rayrender.net/reference/generate_ground.html" class="external-link">generate_ground</a></span><span class="op">(</span>depth <span class="op">=</span> <span class="op">-</span><span class="fl">4</span>, material <span class="op">=</span> <span class="fu"><a href="http://www.rayrender.net/reference/diffuse.html" class="external-link">diffuse</a></span><span class="op">(</span>color <span class="op">=</span> <span class="st">"purple"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="http://www.rayrender.net/reference/add_object.html" class="external-link">add_object</a></span><span class="op">(</span><span class="va">buckyball</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -281,8 +370,32 @@
 <span>        fov <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>        lookfrom <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5.96</span>, <span class="fl">0.99</span>, <span class="fl">29.43</span><span class="op">)</span>,</span>
 <span>        lookat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.80</span>, <span class="fl">0.26</span>, <span class="fl">3.91</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-7-2.png" width="100%"></p>
+<span>    <span class="op">)</span></span>
+<span><span class="co">#&gt; Error in `rbind()`:</span></span>
+<span><span class="co">#&gt; ! numbers of columns of arguments do not match</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="protein-data-bank-ribbons">Protein Data Bank Ribbons<a class="anchor" aria-label="anchor" href="#protein-data-bank-ribbons"></a>
+</h2>
+<p><code>raymolecule</code> can also download PDB structures from <a href="https://www.rcsb.org/" class="external-link">RCSB</a>, parse multi-model ensembles, and generate ribbon cartoons. This compact beta-barrel example renders a single PDB structure with UV ribbon coloring and hetero overlays.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pdb_file</span> <span class="op">=</span> <span class="fu"><a href="reference/download_pdb.html">download_pdb</a></span><span class="op">(</span><span class="st">"4fsp"</span>, out_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/read_pdb.html">read_pdb</a></span><span class="op">(</span><span class="va">pdb_file</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/generate_ribbon_scene.html">generate_ribbon_scene</a></span><span class="op">(</span></span>
+<span>        color_mode <span class="op">=</span> <span class="st">"uv"</span>,</span>
+<span>        show_hetero_atoms <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>        show_hetero_bonds <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="reference/render_model.html">render_model</a></span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">FALSE</span>, width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, background <span class="op">=</span> <span class="st">"grey12"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Read CRYSTAL STRUCTURE OF PSEUDOMONAS AERUGINOSA OCCK11 (OPDR) PDB models [1]</span></span>
+<span><span class="co">#&gt;   PDB ID: 4FSP</span></span>
+<span><span class="co">#&gt;   Experiment: X-RAY DIFFRACTION</span></span>
+<span><span class="co">#&gt;   Parsed: 3135 atoms, 364 residues, 1 chains, 192 bonds</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-pdb-examples-1.png" alt="plot of chunk pdb-examples" width="100%"><p class="caption">
+plot of chunk pdb-examples
+</p>
+</div>
 </div>
 </div>
   </div>

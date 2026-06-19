@@ -23,7 +23,7 @@ tapered C-terminal arrowheads."><!-- mathjax --><script src="https://cdnjs.cloud
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">raymolecule</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.8.0</span>
       </span>
     </div>
 
@@ -80,8 +80,8 @@ tapered C-terminal arrowheads.</p>
 <span>  z <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  scale <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  center <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  pathtrace <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  ribbon_width <span class="op">=</span> <span class="fl">1.6</span>,</span>
+<span>  model_id <span class="op">=</span> <span class="cn">NA_integer_</span>,</span>
+<span>  ribbon_width <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  ribbon_thickness <span class="op">=</span> <span class="fl">0.25</span>,</span>
 <span>  cross_section_resolution <span class="op">=</span> <span class="fl">24</span>,</span>
 <span>  subdivisions <span class="op">=</span> <span class="fl">8</span>,</span>
@@ -89,11 +89,18 @@ tapered C-terminal arrowheads.</p>
 <span>  chain_colors <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  texture <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  material <span class="op">=</span> <span class="fu">rayrender</span><span class="fu">::</span><span class="va"><a href="http://www.rayrender.net/reference/glossy.html" class="external-link">glossy</a></span>,</span>
+<span>  material_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  material_vertex <span class="op">=</span> <span class="fu">rayvertex</span><span class="fu">::</span><span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"phong"</span><span class="op">)</span>,</span>
+<span>  raster_ambient_mix <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  show_hetero_atoms <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_hetero_bonds <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_waters <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  use_vertex_normals <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  show_protein_atoms <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  show_protein_bonds <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  atom_scale <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  bond_width <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  use_vertex_normals <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -125,14 +132,13 @@ tapered C-terminal arrowheads.</p>
 <dd><p>Default `TRUE`. Centers the bounding box of the model.</p></dd>
 
 
-<dt id="arg-pathtrace">pathtrace<a class="anchor" aria-label="anchor" href="#arg-pathtrace"></a></dt>
-<dd><p>Default `TRUE`. If `FALSE`, a `rayvertex` mesh scene is
-returned. If `TRUE`, a `rayrender` scene is returned from the same mesh
-data.</p></dd>
+<dt id="arg-model-id">model_id<a class="anchor" aria-label="anchor" href="#arg-model-id"></a></dt>
+<dd><p>Default `NA_integer_`. PDB `MODEL` identifier(s) to render.
+The default `NA` renders all parsed models in the ensemble.</p></dd>
 
 
 <dt id="arg-ribbon-width">ribbon_width<a class="anchor" aria-label="anchor" href="#arg-ribbon-width"></a></dt>
-<dd><p>Default `1.6`. Width of the ribbon cross-section.</p></dd>
+<dd><p>Default `2`. Width of the ribbon cross-section.</p></dd>
 
 
 <dt id="arg-ribbon-thickness">ribbon_thickness<a class="anchor" aria-label="anchor" href="#arg-ribbon-thickness"></a></dt>
@@ -167,13 +173,29 @@ omitted in UV mode, a built-in rainbow gradient is used.</p></dd>
 
 
 <dt id="arg-material">material<a class="anchor" aria-label="anchor" href="#arg-material"></a></dt>
-<dd><p>Default `rayrender::glossy`. Rayrender material template to
-use when `pathtrace = TRUE`.</p></dd>
+<dd><p>Default `rayrender::glossy`. Optional rayrender material
+used to initialize the mesh material when `material_vertex` is not
+supplied. Must be either `glossy`, `diffuse`, or `dielectric`.</p></dd>
+
+
+<dt id="arg-material-args">material_args<a class="anchor" aria-label="anchor" href="#arg-material-args"></a></dt>
+<dd><p>Default `list()`. Named list of additional arguments
+passed to `material`. Arguments supplied by raymolecule for colors and
+textures override entries with the same names. For example, use
+`list(gloss = 0.35, reflectance = 0.12)` with `rayrender::glossy`, or
+`list(sigma = 0.4)` with `rayrender::diffuse`.</p></dd>
 
 
 <dt id="arg-material-vertex">material_vertex<a class="anchor" aria-label="anchor" href="#arg-material-vertex"></a></dt>
 <dd><p>Default `rayvertex::material_list(type = "phong")`.
-Rayvertex material template to use when `pathtrace = FALSE`.</p></dd>
+Mesh material template.</p></dd>
+
+
+<dt id="arg-raster-ambient-mix">raster_ambient_mix<a class="anchor" aria-label="anchor" href="#arg-raster-ambient-mix"></a></dt>
+<dd><p>Default `0.5`. Fraction of raster ribbon color
+contributed by the ambient, unlit material channel. Values closer to `0`
+emphasize diffuse directional lighting; values closer to `1` flatten
+lighting and preserve texture/color more directly.</p></dd>
 
 
 <dt id="arg-show-hetero-atoms">show_hetero_atoms<a class="anchor" aria-label="anchor" href="#arg-show-hetero-atoms"></a></dt>
@@ -191,24 +213,215 @@ shown hetero atoms as a ball-and-stick overlay alongside the ribbon.</p></dd>
 records when `show_hetero_atoms = TRUE` and `show_hetero_bonds = TRUE`.</p></dd>
 
 
+<dt id="arg-show-protein-atoms">show_protein_atoms<a class="anchor" aria-label="anchor" href="#arg-show-protein-atoms"></a></dt>
+<dd><p>Default `FALSE`. If `TRUE`, display protein
+`ATOM` records as small spheres alongside the ribbon.</p></dd>
+
+
+<dt id="arg-show-protein-bonds">show_protein_bonds<a class="anchor" aria-label="anchor" href="#arg-show-protein-bonds"></a></dt>
+<dd><p>Default `FALSE`. If `TRUE`, display inferred
+covalent bonds between protein `ATOM` records as a thin stick overlay.</p></dd>
+
+
+<dt id="arg-atom-scale">atom_scale<a class="anchor" aria-label="anchor" href="#arg-atom-scale"></a></dt>
+<dd><p>Default `1`. Multiplier applied to the radii of optional
+atom overlays.</p></dd>
+
+
+<dt id="arg-bond-width">bond_width<a class="anchor" aria-label="anchor" href="#arg-bond-width"></a></dt>
+<dd><p>Default `1`. Multiplier applied to the radii of optional
+bond overlays.</p></dd>
+
+
 <dt id="arg-use-vertex-normals">use_vertex_normals<a class="anchor" aria-label="anchor" href="#arg-use-vertex-normals"></a></dt>
 <dd><p>Default `FALSE`. If `TRUE`, attach the ribbon
-mesh's swept vertex normals. If `FALSE`, raster scenes omit explicit
-normals and pathtraced scenes use flat face normals.</p></dd>
+mesh's swept vertex normals. If `FALSE`, scenes omit explicit vertex
+normals and pathtraced renders use flat face normals.</p></dd>
+
+
+<dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
+<dd><p>Default `FALSE`. If `TRUE`, report the PDB name and model
+identifiers being rendered.</p></dd>
 
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>Rayrender/rayvertex scene containing a ribbon mesh.</p>
+    <p>Raymesh scene containing a ribbon mesh.</p>
     </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"3nir.pdb"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="read_pdb.html">read_pdb</a></span><span class="op">(</span><span class="st">"3nir.pdb"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>    <span class="fu">generate_ribbon_scene</span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>    <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">ribbon_file</span> <span class="op">=</span> <span class="fu"><a href="download_pdb.html">download_pdb</a></span><span class="op">(</span><span class="st">"2w5o"</span>, out_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">ribbon_model</span> <span class="op">=</span> <span class="fu"><a href="read_pdb.html">read_pdb</a></span><span class="op">(</span><span class="va">ribbon_file</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Read COMPLEX STRUCTURE OF THE GH93 ALPHA-L-ARABINOFURANOSIDASE OF FUSARIUM GRAMINEARUM WITH ARABINOBIOSE PDB models [1]</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   PDB ID: 2W5O</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Experiment: X-RAY DIFFRACTION</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Parsed: 3231 atoms, 354 residues, 1 chains, 182 bonds</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Start with a centered raster ribbon using the default ribbon width,</span></span></span>
+<span class="r-in"><span><span class="co"># thickness, color mode, and ligand overlays.</span></span></span>
+<span class="r-in"><span><span class="va">ribbon_model</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">generate_ribbon_scene</span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    pathtrace <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    width <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    height <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    background <span class="op">=</span> <span class="st">"grey12"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-plt img"><img src="generate_ribbon_scene-1.png" alt="" width="1600" height="1600"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># This pathtraced version widens the ribbon, increases cross-section</span></span></span>
+<span class="r-in"><span><span class="co"># resolution, applies a custom UV texture, turns on atom/bond overlays, and</span></span></span>
+<span class="r-in"><span><span class="co"># uses the mesh vertex normals.</span></span></span>
+<span class="r-in"><span><span class="va">texture_file</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".png"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/png.html" class="external-link">png</a></span><span class="op">(</span><span class="va">texture_file</span>, width <span class="op">=</span> <span class="fl">64</span>, height <span class="op">=</span> <span class="fl">8</span>, bg <span class="op">=</span> <span class="st">"transparent"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">graphics</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">graphics</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/graphics/image.html" class="external-link">image</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="fl">64</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  col <span class="op">=</span> <span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.colors</a></span><span class="op">(</span><span class="fl">64</span>, <span class="st">"Spectral"</span>, rev <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  axes <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  xlab <span class="op">=</span> <span class="st">""</span>,</span></span>
+<span class="r-in"><span>  ylab <span class="op">=</span> <span class="st">""</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">dev.off</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> agg_record_1d87565960d5 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                       2 </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">ribbon_model</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">generate_ribbon_scene</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    x <span class="op">=</span> <span class="fl">0</span>,</span></span>
+<span class="r-in"><span>    y <span class="op">=</span> <span class="fl">0</span>,</span></span>
+<span class="r-in"><span>    z <span class="op">=</span> <span class="fl">0</span>,</span></span>
+<span class="r-in"><span>    scale <span class="op">=</span> <span class="fl">1</span>,</span></span>
+<span class="r-in"><span>    center <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    ribbon_width <span class="op">=</span> <span class="fl">1.8</span>,</span></span>
+<span class="r-in"><span>    ribbon_thickness <span class="op">=</span> <span class="fl">0.3</span>,</span></span>
+<span class="r-in"><span>    cross_section_resolution <span class="op">=</span> <span class="fl">32</span>,</span></span>
+<span class="r-in"><span>    subdivisions <span class="op">=</span> <span class="fl">10</span>,</span></span>
+<span class="r-in"><span>    color_mode <span class="op">=</span> <span class="st">"uv"</span>,</span></span>
+<span class="r-in"><span>    texture <span class="op">=</span> <span class="va">texture_file</span>,</span></span>
+<span class="r-in"><span>    material <span class="op">=</span> <span class="fu">rayrender</span><span class="fu">::</span><span class="va"><a href="http://www.rayrender.net/reference/diffuse.html" class="external-link">diffuse</a></span>,</span></span>
+<span class="r-in"><span>    material_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sigma <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    show_hetero_atoms <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    show_hetero_bonds <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    show_waters <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    show_protein_atoms <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    show_protein_bonds <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    atom_scale <span class="op">=</span> <span class="fl">1.2</span>,</span></span>
+<span class="r-in"><span>    bond_width <span class="op">=</span> <span class="fl">0.8</span>,</span></span>
+<span class="r-in"><span>    use_vertex_normals <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">TRUE</span>, width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Rendering COMPLEX STRUCTURE OF THE GH93 ALPHA-L-ARABINOFURANOSIDASE OF FUSARIUM GRAMINEARUM WITH ARABINOBIOSE PDB models [1]</span>
+<span class="r-plt img"><img src="generate_ribbon_scene-2.png" alt="" width="1600" height="1600"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Start the beta-barrel example with the default UV texture in raster mode.</span></span></span>
+<span class="r-in"><span><span class="co"># We rotate the model to match the render in the protein data bank.</span></span></span>
+<span class="r-in"><span><span class="va">barrel_model</span> <span class="op">=</span> <span class="fu"><a href="read_pdb.html">read_pdb</a></span><span class="op">(</span><span class="fu"><a href="download_pdb.html">download_pdb</a></span><span class="op">(</span><span class="st">"4fsp"</span>, out_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">barrel_scene</span> <span class="op">=</span> <span class="va">barrel_model</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">generate_ribbon_scene</span><span class="op">(</span>color_mode <span class="op">=</span> <span class="st">"uv"</span>, raster_ambient_mix <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">barrel_render</span> <span class="op">=</span> <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">barrel_scene</span>,</span></span>
+<span class="r-in"><span>  pathtrace <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  width <span class="op">=</span> <span class="fl">500</span>,</span></span>
+<span class="r-in"><span>  height <span class="op">=</span> <span class="fl">500</span>,</span></span>
+<span class="r-in"><span>  background <span class="op">=</span> <span class="st">"white"</span>,</span></span>
+<span class="r-in"><span>  lookfrom <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">89.95</span>, <span class="fl">66.11</span>, <span class="op">-</span><span class="fl">109.95</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  angle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">60</span>, <span class="fl">270</span>, <span class="fl">180</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  lookat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">6.06</span>, <span class="op">-</span><span class="fl">7.62</span>, <span class="fl">1.41</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  fov <span class="op">=</span> <span class="fl">27.2</span>,</span></span>
+<span class="r-in"><span>  plot <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">pdb_4fsp_image</span> <span class="op">=</span> <span class="fu">rayimage</span><span class="fu">::</span><span class="fu"><a href="https://www.rayimage.dev/reference/render_title.html" class="external-link">render_title</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="st">"extdata"</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"4fsp_assembly-1.jpeg"</span>,</span></span>
+<span class="r-in"><span>  package <span class="op">=</span> <span class="st">"raymolecule"</span>,</span></span>
+<span class="r-in"><span>  mustWork <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span>, title_text <span class="op">=</span> <span class="st">"Protein Data Bank Render"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">ray_4fsp_image</span> <span class="op">=</span> <span class="fu">rayimage</span><span class="fu">::</span><span class="fu"><a href="https://www.rayimage.dev/reference/render_title.html" class="external-link">render_title</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">barrel_render</span>,</span></span>
+<span class="r-in"><span>  title_text <span class="op">=</span> <span class="st">"Raymolecule Render"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">rayimage</span><span class="fu">::</span><span class="fu"><a href="https://www.rayimage.dev/reference/plot_image_grid.html" class="external-link">plot_image_grid</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">pdb_4fsp_image</span>, <span class="va">ray_4fsp_image</span><span class="op">)</span>,dim<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="generate_ribbon_scene-3.png" alt="" width="1600" height="1600"></span>
+<span class="r-in"><span><span class="co"># Raising the raster ambient mix gives the same barrel less directional</span></span></span>
+<span class="r-in"><span><span class="co"># lighting</span></span></span>
+<span class="r-in"><span><span class="va">barrel_model</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">generate_ribbon_scene</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    color_mode <span class="op">=</span> <span class="st">"uv"</span>,</span></span>
+<span class="r-in"><span>    texture <span class="op">=</span> <span class="cn">NULL</span>,</span></span>
+<span class="r-in"><span>    raster_ambient_mix <span class="op">=</span> <span class="fl">0.8</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    pathtrace <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    width <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    height <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    background <span class="op">=</span> <span class="st">"grey12"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-plt img"><img src="generate_ribbon_scene-4.png" alt="" width="1600" height="1600"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Start the multi-chain example with the automatic chain color palette.</span></span></span>
+<span class="r-in"><span><span class="va">multi_chain_model</span> <span class="op">=</span> <span class="fu"><a href="read_pdb.html">read_pdb</a></span><span class="op">(</span><span class="fu"><a href="download_pdb.html">download_pdb</a></span><span class="op">(</span><span class="st">"1xn1"</span>, out_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">multi_chain_model</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">generate_ribbon_scene</span><span class="op">(</span>color_mode <span class="op">=</span> <span class="st">"chain"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    pathtrace <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    width <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    height <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    background <span class="op">=</span> <span class="st">"grey80"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-plt img"><img src="generate_ribbon_scene-5.png" alt="" width="1600" height="1600"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># An explicit chain color map replaces the automatic palette without</span></span></span>
+<span class="r-in"><span><span class="co"># changing the ribbon geometry.</span></span></span>
+<span class="r-in"><span><span class="va">chain_ids</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">multi_chain_model</span><span class="op">$</span><span class="va">residues</span><span class="op">$</span><span class="va">chain_id</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">chain_ids</span> <span class="op">=</span> <span class="va">chain_ids</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">chain_ids</span><span class="op">)</span><span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">chain_colors</span> <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">rainbow</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">chain_ids</span><span class="op">)</span><span class="op">)</span>, <span class="va">chain_ids</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">multi_chain_model</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">generate_ribbon_scene</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    color_mode <span class="op">=</span> <span class="st">"chain"</span>,</span></span>
+<span class="r-in"><span>    chain_colors <span class="op">=</span> <span class="va">chain_colors</span>,</span></span>
+<span class="r-in"><span>    material_vertex <span class="op">=</span> <span class="fu">rayvertex</span><span class="fu">::</span><span class="fu"><a href="https://www.rayvertex.com/reference/material_list.html" class="external-link">material_list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"phong"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    pathtrace <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    width <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    height <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    background <span class="op">=</span> <span class="st">"grey80"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-plt img"><img src="generate_ribbon_scene-6.png" alt="" width="1600" height="1600"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Start the NMR ensemble view by rendering every parsed model.</span></span></span>
+<span class="r-in"><span><span class="va">ensemble_model</span> <span class="op">=</span> <span class="fu"><a href="read_pdb.html">read_pdb</a></span><span class="op">(</span><span class="fu"><a href="download_pdb.html">download_pdb</a></span><span class="op">(</span><span class="st">"1co1"</span>, out_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">ensemble_model</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">generate_ribbon_scene</span><span class="op">(</span>center <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    pathtrace <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    fov<span class="op">=</span><span class="fl">26</span>,</span></span>
+<span class="r-in"><span>   lookfrom <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">45.95</span>, <span class="fl">58.56</span>, <span class="fl">79.95</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>   lookat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">7.19</span>, <span class="fl">3.87</span>, <span class="op">-</span><span class="fl">1.52</span><span class="op">)</span> ,</span></span>
+<span class="r-in"><span>    width <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    height <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>    background <span class="op">=</span> <span class="st">"black"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-plt img"><img src="generate_ribbon_scene-7.png" alt="" width="1600" height="1600"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Selecting three model IDs shows a cleaner subset of the same ensemble.</span></span></span>
+<span class="r-in"><span><span class="va">ensemble_model</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span> <span class="fu">generate_ribbon_scene</span><span class="op">(</span>model_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">5L</span>, <span class="fl">10L</span><span class="op">)</span>, center <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span> <span class="fu"><a href="render_model.html">render_model</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>   pathtrace <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    fov<span class="op">=</span><span class="fl">26</span>,</span></span>
+<span class="r-in"><span>   lookfrom <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">45.95</span>, <span class="fl">58.56</span>, <span class="fl">79.95</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>   lookat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">7.19</span>, <span class="fl">3.87</span>, <span class="op">-</span><span class="fl">1.52</span><span class="op">)</span> ,</span></span>
+<span class="r-in"><span>   width <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>   height <span class="op">=</span> <span class="fl">800</span>,</span></span>
+<span class="r-in"><span>   background <span class="op">=</span> <span class="st">"black"</span></span></span>
+<span class="r-in"><span> <span class="op">)</span></span></span>
+<span class="r-plt img"><img src="generate_ribbon_scene-8.png" alt="" width="1600" height="1600"></span>
 </code></pre></div>
     </div>
   </div>
