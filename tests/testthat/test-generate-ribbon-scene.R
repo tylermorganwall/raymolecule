@@ -363,7 +363,6 @@ test_that("chain mode assigns distinct materials per chain", {
   model = make_two_chain_model()
   scene = generate_ribbon_scene(
     model,
-    pathtrace = FALSE,
     subdivisions = 2,
     color_mode = "chain"
   )
@@ -379,7 +378,6 @@ test_that("biological assembly chain mode assigns materials per transformed chai
 
   scene = generate_ribbon_scene(
     model,
-    pathtrace = FALSE,
     subdivisions = 2,
     color_mode = "chain"
   )
@@ -398,25 +396,23 @@ test_that("ribbon scenes show non-water hetero atoms by default", {
 
   default_scene = generate_ribbon_scene(
     model,
-    pathtrace = TRUE,
     subdivisions = 2
   )
   water_scene = generate_ribbon_scene(
     model,
-    pathtrace = TRUE,
     subdivisions = 2,
     show_waters = TRUE
   )
   hidden_scene = generate_ribbon_scene(
     model,
-    pathtrace = TRUE,
     subdivisions = 2,
     show_hetero_atoms = FALSE
   )
 
-  expect_equal(sum(default_scene$shape == "sphere"), 1)
-  expect_equal(sum(water_scene$shape == "sphere"), 2)
-  expect_equal(sum(hidden_scene$shape == "sphere"), 0)
+  expect_s3_class(default_scene, "ray_mesh")
+  expect_equal(length(default_scene$shapes), 2)
+  expect_equal(length(water_scene$shapes), 3)
+  expect_equal(length(hidden_scene$shapes), 1)
 })
 
 test_that("ribbon hetero atoms use reduced sphere radii", {
@@ -461,22 +457,72 @@ test_that("ribbon scenes show hetero bonds between displayed hetero atoms", {
   )
   default_scene = generate_ribbon_scene(
     model,
-    pathtrace = TRUE,
     subdivisions = 2
   )
   hidden_scene = generate_ribbon_scene(
     model,
-    pathtrace = TRUE,
     subdivisions = 2,
     show_hetero_bonds = FALSE
   )
 
   expect_equal(nrow(visible_atoms), 5)
   expect_equal(nrow(visible_bonds), 4)
-  expect_equal(sum(default_scene$shape == "sphere"), 5)
-  expect_equal(sum(default_scene$shape == "cylinder"), 8)
-  expect_equal(sum(hidden_scene$shape == "sphere"), 5)
-  expect_equal(sum(hidden_scene$shape == "cylinder"), 0)
+  expect_s3_class(default_scene, "ray_mesh")
+  expect_equal(length(default_scene$shapes), 14)
+  expect_equal(length(hidden_scene$shapes), 6)
+})
+
+test_that("ribbon atom and bond overlay sizes are configurable", {
+  model = make_ribbon_phosphate_model()
+  visible_atoms = raymolecule:::select_ribbon_display_atoms(
+    model = model,
+    show_hetero_atoms = TRUE,
+    show_waters = FALSE
+  )
+  visible_bonds = raymolecule:::select_ribbon_display_bonds(
+    model = model,
+    atoms = visible_atoms,
+    show_hetero_bonds = TRUE
+  )
+
+  mesh_extent = function(scene, shape_index) {
+    vapply(
+      seq_len(ncol(scene$vertices[[shape_index]])),
+      function(axis) diff(range(scene$vertices[[shape_index]][, axis])),
+      numeric(1)
+    )
+  }
+
+  narrow_bond_scene = generate_ribbon_scene(
+    model,
+    subdivisions = 2,
+    bond_width = 0.5
+  )
+  wide_bond_scene = generate_ribbon_scene(
+    model,
+    subdivisions = 2,
+    bond_width = 2
+  )
+  expect_gt(
+    min(mesh_extent(wide_bond_scene, 2)),
+    min(mesh_extent(narrow_bond_scene, 2)) * 1.5
+  )
+
+  first_atom_shape = 1L + nrow(visible_bonds) * 2L + 1L
+  small_atom_scene = generate_ribbon_scene(
+    model,
+    subdivisions = 2,
+    atom_scale = 0.5
+  )
+  large_atom_scene = generate_ribbon_scene(
+    model,
+    subdivisions = 2,
+    atom_scale = 1.5
+  )
+  expect_gt(
+    min(mesh_extent(large_atom_scene, first_atom_shape)),
+    min(mesh_extent(small_atom_scene, first_atom_shape)) * 2
+  )
 })
 
 test_that("ribbon scenes can show protein atoms as an overlay", {
@@ -490,20 +536,19 @@ test_that("ribbon scenes can show protein atoms as an overlay", {
   )
   default_scene = generate_ribbon_scene(
     model,
-    pathtrace = TRUE,
     subdivisions = 2
   )
   atom_scene = generate_ribbon_scene(
     model,
-    pathtrace = TRUE,
     subdivisions = 2,
     show_protein_atoms = TRUE
   )
 
   expect_equal(nrow(visible_atoms), 8)
   expect_true(all(visible_atoms$record == "ATOM"))
-  expect_equal(sum(default_scene$shape == "sphere"), 0)
-  expect_equal(sum(atom_scene$shape == "sphere"), 8)
+  expect_s3_class(default_scene, "ray_mesh")
+  expect_equal(length(default_scene$shapes), 1)
+  expect_equal(length(atom_scene$shapes), 9)
 })
 
 test_that("ribbon scenes infer protein bond overlays from atoms", {
@@ -523,20 +568,18 @@ test_that("ribbon scenes infer protein bond overlays from atoms", {
   )
   default_scene = generate_ribbon_scene(
     model,
-    pathtrace = TRUE,
     subdivisions = 2
   )
   bond_scene = generate_ribbon_scene(
     model,
-    pathtrace = TRUE,
     subdivisions = 2,
     show_protein_bonds = TRUE
   )
 
   expect_equal(nrow(visible_bonds), 7)
-  expect_equal(sum(default_scene$shape == "cylinder"), 0)
-  expect_equal(sum(bond_scene$shape == "cylinder"), 14)
-  expect_equal(sum(bond_scene$shape == "sphere"), 0)
+  expect_s3_class(default_scene, "ray_mesh")
+  expect_equal(length(default_scene$shapes), 1)
+  expect_equal(length(bond_scene$shapes), 15)
 })
 
 test_that("uv mode attaches texture coordinates and texture locations", {
@@ -546,17 +589,66 @@ test_that("uv mode attaches texture coordinates and texture locations", {
 
   scene = generate_ribbon_scene(
     model,
-    pathtrace = FALSE,
     subdivisions = 2,
     color_mode = "uv",
-    texture = texture
+    texture = texture,
+    raster_ambient_mix = 0.25
   )
 
   expect_true(all(
     vapply(scene$materials, function(x) x[[1]]$diffuse_texname, character(1)) ==
       texture
   ))
+  expect_true(all(
+    vapply(scene$materials, function(x) x[[1]]$ambient_texname, character(1)) ==
+      texture
+  ))
+  ambient_intensities = vapply(
+    scene$materials,
+    function(x) x[[1]]$ambient_intensity,
+    numeric(1)
+  )
+  diffuse_intensities = vapply(
+    scene$materials,
+    function(x) x[[1]]$diffuse_intensity,
+    numeric(1)
+  )
+  expect_equal(ambient_intensities, rep(0.25, length(ambient_intensities)))
+  expect_equal(diffuse_intensities, rep(0.75, length(diffuse_intensities)))
   expect_true(length(scene$texcoords) > 0)
+})
+
+test_that("raster ambient mix is validated", {
+  model = make_single_chain_model()
+
+  expect_error(
+    generate_ribbon_scene(
+      model,
+      raster_ambient_mix = -0.1
+    ),
+    "raster_ambient_mix must be a finite number between 0 and 1"
+  )
+  expect_error(
+    generate_ribbon_scene(
+      model,
+      raster_ambient_mix = 1.1
+    ),
+    "raster_ambient_mix must be a finite number between 0 and 1"
+  )
+  expect_error(
+    generate_ribbon_scene(
+      model,
+      atom_scale = 0
+    ),
+    "atom_scale must be a positive number"
+  )
+  expect_error(
+    generate_ribbon_scene(
+      model,
+      bond_width = NA_real_
+    ),
+    "bond_width must be a positive number"
+  )
 })
 
 test_that("ribbon scenes omit explicit vertex normals by default", {
@@ -564,7 +656,6 @@ test_that("ribbon scenes omit explicit vertex normals by default", {
 
   scene = generate_ribbon_scene(
     model,
-    pathtrace = FALSE,
     subdivisions = 2
   )
 
@@ -580,7 +671,6 @@ test_that("ribbon scenes include explicit vertex normals when requested", {
 
   scene = generate_ribbon_scene(
     model,
-    pathtrace = FALSE,
     subdivisions = 2,
     use_vertex_normals = TRUE
   )
@@ -597,7 +687,6 @@ test_that("single-chain default mode uses the built-in UV texture", {
 
   scene = generate_ribbon_scene(
     model,
-    pathtrace = FALSE,
     subdivisions = 2
   )
 
@@ -610,6 +699,9 @@ test_that("single-chain default mode uses the built-in UV texture", {
   expect_equal(length(texture_names), 1)
   expect_true(nzchar(texture_names[[1]]))
   expect_true(file.exists(texture_names[[1]]))
+  expect_equal(scene$materials[[1]][[1]]$ambient_texname, texture_names[[1]])
+  expect_equal(scene$materials[[1]][[1]]$ambient_intensity, 0.5)
+  expect_equal(scene$materials[[1]][[1]]$diffuse_intensity, 0.5)
 })
 
 test_that("multi-chain default mode preserves per-chain coloring", {
@@ -617,8 +709,8 @@ test_that("multi-chain default mode preserves per-chain coloring", {
 
   scene = generate_ribbon_scene(
     model,
-    pathtrace = FALSE,
-    subdivisions = 2
+    subdivisions = 2,
+    raster_ambient_mix = 0.8
   )
 
   diffuse_texnames = vapply(
@@ -631,27 +723,37 @@ test_that("multi-chain default mode preserves per-chain coloring", {
 
   expect_true(all(diffuse_texnames == ""))
   expect_false(isTRUE(all.equal(material_a, material_b)))
+  ambient_intensities = vapply(
+    scene$materials,
+    function(x) x[[1]]$ambient_intensity,
+    numeric(1)
+  )
+  diffuse_intensities = vapply(
+    scene$materials,
+    function(x) x[[1]]$diffuse_intensity,
+    numeric(1)
+  )
+  expect_equal(ambient_intensities, rep(0.8, length(ambient_intensities)))
+  expect_equal(diffuse_intensities, rep(0.2, length(diffuse_intensities)))
 })
 
-test_that("generate_ribbon_scene returns valid rayvertex and rayrender scenes", {
+test_that("generate_ribbon_scene always returns raymesh scenes", {
   model = make_two_chain_model()
 
   raster_scene = generate_ribbon_scene(
     model,
-    pathtrace = FALSE,
     subdivisions = 2
   )
-  path_scene = generate_ribbon_scene(model, pathtrace = TRUE, subdivisions = 2)
+  path_scene = generate_ribbon_scene(model, subdivisions = 2)
   smooth_path_scene = generate_ribbon_scene(
     model,
-    pathtrace = TRUE,
     subdivisions = 2,
     use_vertex_normals = TRUE
   )
 
   expect_s3_class(raster_scene, "ray_mesh")
-  expect_s3_class(path_scene, "ray_scene")
-  expect_s3_class(smooth_path_scene, "ray_scene")
+  expect_s3_class(path_scene, "ray_mesh")
+  expect_s3_class(smooth_path_scene, "ray_mesh")
 })
 
 test_that("generate_ribbon_scene can render a selected PDB model", {
@@ -666,7 +768,6 @@ test_that("generate_ribbon_scene can render a selected PDB model", {
       model,
       model_id = 2,
       verbose = TRUE,
-      pathtrace = FALSE,
       cross_section_resolution = 8,
       subdivisions = 1
     ),
@@ -724,23 +825,22 @@ test_that("flat ribbon normals fall back cleanly on degenerate triangles", {
   expect_equal(flat_normals$norm_indices, matrix(c(0L, 0L, 0L), ncol = 3))
 })
 
-test_that("pathtraced sheet ribbons tolerate low-resolution degenerate faces", {
+test_that("sheet ribbons tolerate low-resolution degenerate faces", {
   model = make_sheet_model()
 
   scene = expect_no_error(
     generate_ribbon_scene(
       model,
-      pathtrace = TRUE,
       cross_section_resolution = 8,
       subdivisions = 4
     )
   )
-  expect_s3_class(scene, "ray_scene")
+  expect_s3_class(scene, "ray_mesh")
 })
 
 test_that("render_model works for pathtraced ribbon scenes", {
   model = make_two_chain_model()
-  path_scene = generate_ribbon_scene(model, pathtrace = TRUE, subdivisions = 2)
+  path_scene = generate_ribbon_scene(model, subdivisions = 2)
 
   path_image = render_model(
     path_scene,
@@ -757,14 +857,11 @@ test_that("render_model works for pathtraced ribbon scenes", {
 
 test_that("render_model forwards dimensions and explicit camera values", {
   model = make_two_chain_model()
-  path_scene = generate_ribbon_scene(model, pathtrace = TRUE, subdivisions = 2)
-  raster_scene = generate_ribbon_scene(
-    model,
-    pathtrace = FALSE,
-    subdivisions = 2
-  )
+  path_scene = generate_ribbon_scene(model, subdivisions = 2)
+  raster_scene = generate_ribbon_scene(model, subdivisions = 2)
   pathtrace_args = NULL
   raster_args = NULL
+  rotation_args = list()
   light_matrix = matrix(c(1, 1, 1), nrow = 1)
   lookat = c(1, 2, 3)
   lookfrom = c(4, 5, 6)
@@ -779,9 +876,10 @@ test_that("render_model forwards dimensions and explicit camera values", {
       array(0, dim = c(1, 1, 4))
     },
     rotate_mesh = function(scene, angle, order_rotation) {
-      scene
-    },
-    group_objects = function(scene, angle, order_rotation) {
+      rotation_args[[length(rotation_args) + 1L]] <<- list(
+        angle = angle,
+        order_rotation = order_rotation
+      )
       scene
     },
     .package = "raymolecule"
@@ -790,11 +888,16 @@ test_that("render_model forwards dimensions and explicit camera values", {
   expect_no_error(
     render_model(
       path_scene,
+      plot = FALSE,
       lights = "none",
       lookat = lookat,
       lookfrom = lookfrom,
+      angle = 35,
+      background = "grey12",
       samples = 1,
       min_variance = 0,
+      fsaa = 4,
+      shadow_map = TRUE,
       parallel = FALSE
     )
   )
@@ -802,9 +905,26 @@ test_that("render_model forwards dimensions and explicit camera values", {
   expect_equal(pathtrace_args$lookfrom, lookfrom)
   expect_equal(pathtrace_args$width, 800L)
   expect_equal(pathtrace_args$height, 800L)
+  expect_false(pathtrace_args$plot_scene)
+  expect_null(pathtrace_args$background)
+  expect_equal(pathtrace_args$backgroundlow, "grey12")
+  expect_equal(pathtrace_args$backgroundhigh, "grey12")
+  expect_true(pathtrace_args$ambient_light)
+  expect_null(pathtrace_args$fsaa)
+  expect_null(pathtrace_args$shadow_map)
+  expect_equal(rotation_args[[1]]$angle, c(0, 35, 0))
+  expect_equal(rotation_args[[1]]$order_rotation, c(1, 2, 3))
   expect_error(
     render_model(path_scene, width = 0),
     "width must be a positive finite number"
+  )
+  expect_error(
+    render_model(path_scene, pathtrace = NA),
+    "pathtrace must be TRUE or FALSE"
+  )
+  expect_error(
+    render_model(path_scene, plot = NA),
+    "plot must be TRUE or FALSE"
   )
 
   expect_no_error(
@@ -812,13 +932,138 @@ test_that("render_model forwards dimensions and explicit camera values", {
       raster_scene,
       width = 64,
       height = 65,
+      plot = FALSE,
       lights = light_matrix,
       lookat = lookat,
-      lookfrom = lookfrom
+      lookfrom = lookfrom,
+      angle = 35,
+      background = "grey15",
+      samples = 32,
+      sample_method = "sobol_blue",
+      denoise = TRUE,
+      clamp_value = 10,
+      pathtrace = FALSE
     )
   )
   expect_equal(raster_args$lookat, lookat)
   expect_equal(raster_args$lookfrom, lookfrom)
   expect_equal(raster_args$width, 64L)
   expect_equal(raster_args$height, 65L)
+  expect_false(raster_args$plot)
+  expect_equal(raster_args$background, "grey15")
+  expect_null(raster_args$samples)
+  expect_null(raster_args$sample_method)
+  expect_null(raster_args$denoise)
+  expect_null(raster_args$clamp_value)
+  expect_equal(rotation_args[[2]]$angle, c(0, 35, 0))
+  expect_equal(rotation_args[[2]]$order_rotation, c(1, 2, 3))
+})
+
+test_that("render_model adds extra scene elements after automatic transforms", {
+  model = make_two_chain_model()
+  path_scene = generate_ribbon_scene(model, subdivisions = 2)
+  raster_scene = generate_ribbon_scene(model, subdivisions = 2)
+  pathtrace_args = NULL
+  raster_args = NULL
+  rotation_args = list()
+  group_args = list()
+
+  local_mocked_bindings(
+    render_scene = function(...) {
+      pathtrace_args <<- list(...)
+      array(0, dim = c(1, 1, 4))
+    },
+    rasterize_scene = function(...) {
+      raster_args <<- list(...)
+      array(0, dim = c(1, 1, 4))
+    },
+    rotate_mesh = function(scene, angle, order_rotation) {
+      rotation_args[[length(rotation_args) + 1L]] <<- list(
+        angle = angle,
+        order_rotation = order_rotation,
+        shape_count = length(scene$shapes)
+      )
+      scene
+    },
+    group_objects = function(scene, angle, order_rotation) {
+      group_args[[length(group_args) + 1L]] <<- list(
+        angle = angle,
+        order_rotation = order_rotation,
+        row_count = nrow(scene)
+      )
+      scene
+    },
+    .package = "raymolecule"
+  )
+
+  pathtrace_extra = rayrender::sphere(
+    x = 99,
+    material = rayrender::diffuse()
+  )
+  expect_no_error(
+    render_model(
+      path_scene,
+      plot = FALSE,
+      lights = "none",
+      angle = 45,
+      scene_elements = pathtrace_extra,
+      samples = 1,
+      min_variance = 0,
+      parallel = FALSE
+    )
+  )
+  expect_equal(rotation_args[[1]]$shape_count, length(path_scene$shapes))
+  expect_true(any(
+    pathtrace_args$scene$shape == "sphere" &
+      pathtrace_args$scene$x == 99
+  ))
+
+  rayrender_scene = rayrender::sphere(
+    x = 1,
+    material = rayrender::diffuse()
+  )
+  expect_no_error(
+    render_model(
+      rayrender_scene,
+      plot = FALSE,
+      lights = "none",
+      angle = c(10, 20, 30),
+      scene_elements = pathtrace_extra,
+      samples = 1,
+      min_variance = 0,
+      parallel = FALSE
+    )
+  )
+  expect_equal(group_args[[1]]$row_count, nrow(rayrender_scene))
+  expect_true(any(
+    pathtrace_args$scene$shape == "sphere" &
+      pathtrace_args$scene$x == 99
+  ))
+
+  raster_extra = rayvertex::sphere_mesh(position = c(99, 0, 0))
+  expect_no_error(
+    render_model(
+      raster_scene,
+      pathtrace = FALSE,
+      plot = FALSE,
+      lights = "none",
+      angle = 45,
+      scene_elements = raster_extra
+    )
+  )
+  expect_equal(rotation_args[[2]]$shape_count, length(raster_scene$shapes))
+  expect_equal(
+    length(raster_args$scene$shapes),
+    length(raster_scene$shapes) + length(raster_extra$shapes)
+  )
+  expect_error(
+    render_model(
+      raster_scene,
+      pathtrace = FALSE,
+      plot = FALSE,
+      lights = "none",
+      scene_elements = pathtrace_extra
+    ),
+    "rayvertex raymesh scenes"
+  )
 })

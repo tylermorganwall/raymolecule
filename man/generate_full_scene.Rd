@@ -11,9 +11,9 @@ generate_full_scene(
   z = 0,
   scale = 1,
   center = TRUE,
-  pathtrace = TRUE,
   force_single_bonds = FALSE,
   material = rayrender::glossy,
+  material_args = list(),
   material_vertex = material_list(type = "phong")
 )
 }
@@ -30,57 +30,77 @@ generate_full_scene(
 
 \item{center}{Default `TRUE`. Centers the bounding box of the model.}
 
-\item{pathtrace}{Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.}
-
 \item{force_single_bonds}{Default `FALSE`. Whether to force all bonds to show as a single connection.}
 
-\item{material}{Default `rayrender::glossy`. Rayrender material to use when `pathtrace = TRUE`. Must be either `glossy`, `diffuse`, or `dielectric`.}
+\item{material}{Default `rayrender::glossy`. Optional rayrender material
+used to initialize the mesh material when `material_vertex` is not
+supplied. Must be either `glossy`, `diffuse`, or `dielectric`.}
 
-\item{material_vertex}{Default `rayvertex::material_list()`. Material to use when `pathtrace = FALSE`.
+\item{material_args}{Default `list()`. Named list of additional arguments
+passed to `material`. Arguments supplied by raymolecule for colors and
+textures override entries with the same names. For example, use
+`list(gloss = 0.35, reflectance = 0.12)` with `rayrender::glossy`, or
+`list(sigma = 0.4)` with `rayrender::diffuse`.}
+
+\item{material_vertex}{Default `rayvertex::material_list()`. Mesh material.
 `diffuse`/`ambient` colors and `ambient_intensity` are determined automatically, but all other material
 properties can be changed.}
 }
 \value{
-Rayrender/rayvertex scene
+Raymesh scene
 }
 \description{
-Reads an SDF file and extracts the 3D molecule model
+Builds a combined atom and bond scene from a PDB or SDF model.
 }
 \examples{
-# Generate a scene with caffeine molecule
-\donttest{
-get_example_molecule("caffeine") |>
-  read_sdf() |>
-  generate_full_scene() |>
-  render_model(samples=256,sample_method="sobol_blue")
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
+molecule_model = read_sdf(get_example_molecule("caffeine"))
 
-#Generate a rayvertex scene with a custom material
-get_example_molecule("caffeine") |>
-  read_sdf() |>
-  generate_full_scene(pathtrace=FALSE, material_vertex=rayvertex::material_list(type="phong")) |>
-  render_model(background="grey33")
-
-#Generate a rayvertex scene, using toon shading
-shiny_toon_material = rayvertex::material_list(type="toon_phong",
-                                               toon_levels=3,
-                                               toon_outline_width=0.1)
-get_example_molecule("caffeine") |>
-  read_sdf() |>
-  generate_full_scene(pathtrace=FALSE, material_vertex=shiny_toon_material) |>
-  render_model(background="grey66")
-
-# Generate a scene with morphine, increasing the inter-atom spacing
-get_example_molecule("tubocurarine_chloride") |>
-  read_sdf() |>
-  generate_full_scene(scale=1.5) |>
-  render_model(samples=256,sample_method="sobol_blue")
-
-
-# Force bonds to appear as a single link (to focus purely on the shape of the molecule)
-get_example_molecule("tubocurarine_chloride") |>
-  read_sdf() |>
+# Start with a centered raster scene that combines atom spheres and bond
+# geometry using the default atom colors.
+molecule_model |>
   generate_full_scene(force_single_bonds = TRUE) |>
-  render_model(samples=256,sample_method="sobol_blue")
+  render_model(
+    pathtrace = FALSE,
+    width = 800,
+    height = 800,
+    background = "grey12"
+  )
 
-}
+# This version changes the scale, keeps the model centered, and uses a
+# diffuse mesh material for both atoms and bonds before pathtracing.
+molecule_model |>
+  generate_full_scene(
+    x = 0,
+    y = 0,
+    z = 0,
+    scale = 0.75,
+    center = TRUE,
+    force_single_bonds = TRUE,
+    material = rayrender::diffuse,
+    material_args = list(sigma = 0.3)
+  ) |>
+  render_model(pathtrace = TRUE, width = 800, height = 800, samples = 32)
+
+# A toon material changes the raster shader and pass FSAA to render_model()
+# so rayvertex adds anti-aliasing.
+shiny_toon_material = rayvertex::material_list(
+  type = "toon_phong",
+  toon_levels = 3,
+  toon_outline_width = 10,
+  toon_outline_color = "white"
+)
+morphine_model = read_sdf(get_example_molecule("morphine"))
+morphine_model |>
+  generate_full_scene(
+    material_vertex = shiny_toon_material
+  ) |>
+  render_model(
+    fsaa = 2,
+    pathtrace = FALSE,
+    width = 800,
+    height = 800,
+    background = "grey50"
+  )
+\dontshow{\}) # examplesIf}
 }

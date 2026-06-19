@@ -44,6 +44,52 @@ test_that("read_pdb parses a valid single-chain PDB with TER and HETATM", {
   expect_identical(model$pdb_type, "pdb")
 })
 
+test_that("read_pdb downloads bare protein queries before parsing", {
+  residue = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
+  temp_dir = tempfile()
+  dir.create(temp_dir)
+  downloaded_file = file.path(temp_dir, "4hhb.pdb")
+  writeLines(
+    c("HEADER    MOCK DOWNLOADED PDB", residue$lines, "END"),
+    downloaded_file
+  )
+  on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
+  queries = character()
+
+  testthat::local_mocked_bindings(
+    download_pdb = function(protein, verbose = FALSE) {
+      queries <<- c(queries, protein)
+      expect_equal(protein, "hemoglobin")
+      expect_false(verbose)
+      downloaded_file
+    }
+  )
+
+  model = read_pdb("hemoglobin")
+
+  expect_equal(queries, "hemoglobin")
+  expect_equal(model$metadata$filename, downloaded_file)
+  expect_equal(nrow(model$atoms), 4)
+})
+
+test_that("read_pdb keeps existing extensionless paths as local files", {
+  residue = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
+  file = tempfile()
+  writeLines(c("HEADER    LOCAL EXTENSIONLESS PDB", residue$lines, "END"), file)
+  on.exit(unlink(file), add = TRUE)
+
+  testthat::local_mocked_bindings(
+    download_pdb = function(...) {
+      stop("download_pdb() should not be called for an existing local file")
+    }
+  )
+
+  model = read_pdb(file)
+
+  expect_equal(model$metadata$filename, file)
+  expect_equal(nrow(model$atoms), 4)
+})
+
 test_that("read_pdb parses multiple chains separated by TER", {
   chain_a_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
   chain_a_2 = backbone_residue_lines(

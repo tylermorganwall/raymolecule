@@ -12,8 +12,8 @@ generate_bond_scene(
   scale = 1,
   center = TRUE,
   force_single_bonds = FALSE,
-  pathtrace = TRUE,
   material = rayrender::glossy,
+  material_args = list(),
   material_vertex = material_list(diffuse = "grey33", ambient = "grey33", type = "phong",
     ambient_intensity = 0.3)
 )
@@ -33,37 +33,79 @@ generate_bond_scene(
 
 \item{force_single_bonds}{Default `FALSE`. Whether to force all bonds to show as a single connection.}
 
-\item{pathtrace}{Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.}
+\item{material}{Default `rayrender::glossy`. Optional rayrender material
+used to initialize the mesh material when `material_vertex` is not
+supplied. Must be either `glossy`, `diffuse`, or `dielectric`.}
 
-\item{material}{Default `rayrender::glossy`. Rayrender material to use when `pathtrace = TRUE`. Must be either `glossy`, `diffuse`, or `dielectric`.}
+\item{material_args}{Default `list()`. Named list of additional arguments
+passed to `material`. Arguments supplied by raymolecule for colors and
+textures override entries with the same names. For example, use
+`list(gloss = 0.35, reflectance = 0.12)` with `rayrender::glossy`, or
+`list(sigma = 0.4)` with `rayrender::diffuse`.}
 
 \item{material_vertex}{Default `material_list(diffuse="grey33",ambient="grey33",type="phong", ambient_intensity=0.3)`.
-Material to use for the bonds when `pathtrace = FALSE`.}
+Mesh material to use for the bonds.}
 }
 \value{
-Rayrender/rayvertex scene containing only the connections between atoms in a molecule/protein.
+Raymesh scene containing only the connections between atoms in a molecule/protein.
 }
 \description{
-Reads an SDF file and extracts the 3D molecule model
+Builds a scene containing only bond geometry from a PDB or SDF model.
 }
 \examples{
-#Generate a scene with benzene molecule with just the atoms
-\donttest{
-get_example_molecule("benzene") |>
-  read_sdf() |>
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
+bond_model = read_sdf(get_example_molecule("benzene"))
+
+# Start with a centered bond scene using the molecule's recorded bond
+# orders and default bond material.
+bond_model |>
   generate_bond_scene() |>
-  render_model(lights = "both", samples=256,sample_method="sobol_blue")
+  render_model(
+    pathtrace = FALSE,
+    width = 800,
+    height = 800,
+    background = "grey10"
+  )
 
-#Force single bonds to just show the shape of the molecule
-get_example_molecule("benzene") |>
-  read_sdf() |>
-  generate_bond_scene(force_single_bonds = TRUE) |>
-  render_model(lights = "both", samples=256,sample_method="sobol_blue")
+# This version reduces the spacing, forces every connection to a single
+# bond, and lights the ligand from above and below while pathtracing.
+bond_model |>
+  generate_bond_scene(
+    x = 0,
+    y = 0,
+    z = 0,
+    scale = 0.7,
+    center = TRUE,
+    force_single_bonds = TRUE,
+    material = rayrender::glossy,
+    material_args = list(gloss = 0.35)
+  ) |>
+  render_model(
+    pathtrace = TRUE,
+    lights = "both",
+    width = 800,
+    height = 800,
+    samples = 32
+  )
 
-#Generate a scene with PFOA, reducing the inter-atom spacing
-get_example_molecule("pfoa") |>
-  read_sdf() |>
-  generate_bond_scene(scale=0.3,force_single_bonds = TRUE) |>
-  render_model(lights = "both", samples=256,sample_method="sobol_blue")
-}
+# A custom rayvertex material changes the raster bond color and ambient
+# contribution while keeping the same geometry.
+bond_material = rayvertex::material_list(
+  diffuse = "grey85",
+  ambient = "grey25",
+  type = "phong",
+  ambient_intensity = 0.4
+)
+cinnemaldehyde_model = read_sdf(get_example_molecule("cinnemaldehyde"))
+cinnemaldehyde_model |>
+  generate_bond_scene(
+    material_vertex = bond_material
+  ) |>
+  render_model(
+    pathtrace = FALSE,
+    width = 800,
+    height = 800,
+    background = "grey10"
+  )
+\dontshow{\}) # examplesIf}
 }

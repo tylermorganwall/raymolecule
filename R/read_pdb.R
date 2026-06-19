@@ -6,7 +6,9 @@
 #' bond scene generators. Biological assemblies can be generated from
 #' `REMARK 350 BIOMT` transforms when requested.
 #'
-#' @param filename Path to the PDB file.
+#' @param filename Path to the PDB file, or a protein name/4-character PDB ID
+#'   to download from RCSB when it is not an existing file and does not end in
+#'   `.pdb`.
 #' @param atom Default `TRUE`. Whether to include standard residue `ATOM`
 #'   records in `model$atoms`.
 #' @param nsr Default `TRUE`. Whether to include `HETATM` records in
@@ -22,17 +24,48 @@
 #' @return List giving the parsed PDB model.
 #' @export
 #'
-#' @examples
-#' # This assumes a hypothetical PDB file in your working directory:
-#' if (file.exists("3nir.pdb")) {
-#'   read_pdb("3nir.pdb") |>
-#'     generate_full_scene() |>
-#'     render_model()
+#' @examplesIf interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")
+#' # Start with a local PDB file and the deposited asymmetric unit. Both ATOM
+#' # and HETATM records are kept, and verbose output prints parse metadata.
+#' pdb_file = download_pdb("2w5o", out_dir = tempdir(), overwrite = TRUE)
+#' model = read_pdb(
+#'   pdb_file,
+#'   atom = TRUE,
+#'   nsr = TRUE,
+#'   assembly = "asymmetric_unit",
+#'   verbose = TRUE
+#' )
 #'
-#'   read_pdb("3nir.pdb", assembly = "biological") |>
-#'     generate_ribbon_scene(pathtrace = FALSE) |>
-#'     render_model()
-#' }
+#' model |>
+#'   generate_ribbon_scene() |>
+#'   render_model(
+#'     pathtrace = FALSE,
+#'     width = 800,
+#'     height = 800,
+#'     background = "grey12"
+#'   )
+#'
+#' # The biological assembly applies REMARK 350 BIOMT transforms when present.
+#' biological_model = read_pdb(
+#'   pdb_file,
+#'   assembly = "biological",
+#'   assembly_id = 1L
+#' )
+#'
+#' # This ligand-only parse keeps HETATM records and drops standard protein
+#' # atoms, which is useful for ligand and ion views.
+#' ligand_file = download_pdb("5hsv", out_dir = tempdir(), overwrite = TRUE)
+#' ligand_model = read_pdb(ligand_file, atom = FALSE, nsr = TRUE)
+#'
+#' ligand_model |>
+#'   generate_full_scene(force_single_bonds = TRUE) |>
+#'   render_model(pathtrace = TRUE, width = 800, height = 800, samples = 32)
+#'
+#' # A bare PDB ID is downloaded automatically when no matching local file is
+#' # found. Verbose output reports the multi-model ensemble.
+#' old_dir = setwd(tempdir())
+#' ensemble_model = read_pdb("1co1", verbose = TRUE)
+#' setwd(old_dir)
 read_pdb = function(
   filename,
   atom = TRUE,
@@ -54,6 +87,7 @@ read_pdb = function(
     stop("assembly_id must be a positive integer")
   }
   assembly_id = as.integer(assembly_id)
+  filename = resolve_pdb_filename(filename, verbose = verbose)
 
   #Read in all the lines first
   lines = readLines(filename, warn = FALSE)
@@ -113,6 +147,39 @@ read_pdb = function(
   }
 
   return(model)
+}
+
+#' @keywords internal
+resolve_pdb_filename = function(filename, verbose = FALSE) {
+  if (!is.character(filename) || length(filename) != 1L || is.na(filename)) {
+    stop("filename must be a single character value", call. = FALSE)
+  }
+
+  filename = trimws(filename)
+  if (!nzchar(filename)) {
+    stop("filename must not be empty", call. = FALSE)
+  }
+
+  if (is_pdb_download_query(filename)) {
+    return(download_pdb(filename, verbose = verbose))
+  }
+
+  filename
+}
+
+#' @keywords internal
+is_pdb_download_query = function(filename) {
+  if (file.exists(filename)) {
+    return(FALSE)
+  }
+  if (tolower(tools::file_ext(filename)) == "pdb") {
+    return(FALSE)
+  }
+  if (grepl("[/\\\\]", filename)) {
+    return(FALSE)
+  }
+
+  TRUE
 }
 
 #' @keywords internal

@@ -1,6 +1,6 @@
 #' Build  Scene (bonds + atoms)
 #'
-#' Reads an SDF file and extracts the 3D molecule model
+#' Builds a combined atom and bond scene from a PDB or SDF model.
 #'
 #' @param model Model extracted from a PDB or SDF file.
 #' @param x Default `0`. X offset, applied after centering.
@@ -9,267 +9,182 @@
 #' @param scale Default `1`. Amount to scale the interatom spacing.
 #' @param center Default `TRUE`. Centers the bounding box of the model.
 #' @param force_single_bonds Default `FALSE`. Whether to force all bonds to show as a single connection.
-#' @param pathtrace Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.
-#' @param material Default `rayrender::glossy`. Rayrender material to use when `pathtrace = TRUE`. Must be either `glossy`, `diffuse`, or `dielectric`.
-#' @param material_vertex Default `rayvertex::material_list()`. Material to use when `pathtrace = FALSE`.
+#' @param material Default `rayrender::glossy`. Optional rayrender material
+#'   used to initialize the mesh material when `material_vertex` is not
+#'   supplied. Must be either `glossy`, `diffuse`, or `dielectric`.
+#' @param material_args Default `list()`. Named list of additional arguments
+#'   passed to `material`. Arguments supplied by raymolecule for colors and
+#'   textures override entries with the same names. For example, use
+#'   `list(gloss = 0.35, reflectance = 0.12)` with `rayrender::glossy`, or
+#'   `list(sigma = 0.4)` with `rayrender::diffuse`.
+#' @param material_vertex Default `rayvertex::material_list()`. Mesh material.
 #' `diffuse`/`ambient` colors and `ambient_intensity` are determined automatically, but all other material
 #' properties can be changed.
 #'
 #'
-#' @return Rayrender/rayvertex scene
-#' @importFrom rayrender render_scene glossy sphere segment add_object
-#' @importFrom rayvertex rasterize_scene material_list sphere_mesh segment_mesh add_shape
+#' @return Raymesh scene
+#' @importFrom rayrender glossy
+#' @importFrom rayvertex material_list sphere_mesh segment_mesh scene_from_list
 #' @export
 #'
-#' @examples
-#' # Generate a scene with caffeine molecule
-#'\donttest{
-#' get_example_molecule("caffeine") |>
-#'   read_sdf() |>
-#'   generate_full_scene() |>
-#'   render_model(samples=256,sample_method="sobol_blue")
+#' @examplesIf interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")
+#' molecule_model = read_sdf(get_example_molecule("caffeine"))
 #'
-#' #Generate a rayvertex scene with a custom material
-#' get_example_molecule("caffeine") |>
-#'   read_sdf() |>
-#'   generate_full_scene(pathtrace=FALSE, material_vertex=rayvertex::material_list(type="phong")) |>
-#'   render_model(background="grey33")
-#'
-#' #Generate a rayvertex scene, using toon shading
-#' shiny_toon_material = rayvertex::material_list(type="toon_phong",
-#'                                                toon_levels=3,
-#'                                                toon_outline_width=0.1)
-#' get_example_molecule("caffeine") |>
-#'   read_sdf() |>
-#'   generate_full_scene(pathtrace=FALSE, material_vertex=shiny_toon_material) |>
-#'   render_model(background="grey66")
-#'
-#' # Generate a scene with morphine, increasing the inter-atom spacing
-#' get_example_molecule("tubocurarine_chloride") |>
-#'   read_sdf() |>
-#'   generate_full_scene(scale=1.5) |>
-#'   render_model(samples=256,sample_method="sobol_blue")
-#'
-#'
-#' # Force bonds to appear as a single link (to focus purely on the shape of the molecule)
-#' get_example_molecule("tubocurarine_chloride") |>
-#'   read_sdf() |>
+#' # Start with a centered raster scene that combines atom spheres and bond
+#' # geometry using the default atom colors.
+#' molecule_model |>
 #'   generate_full_scene(force_single_bonds = TRUE) |>
-#'   render_model(samples=256,sample_method="sobol_blue")
+#'   render_model(
+#'     pathtrace = FALSE,
+#'     width = 800,
+#'     height = 800,
+#'     background = "grey12"
+#'   )
 #'
-#'}
+#' # This version changes the scale, keeps the model centered, and uses a
+#' # diffuse mesh material for both atoms and bonds before pathtracing.
+#' molecule_model |>
+#'   generate_full_scene(
+#'     x = 0,
+#'     y = 0,
+#'     z = 0,
+#'     scale = 0.75,
+#'     center = TRUE,
+#'     force_single_bonds = TRUE,
+#'     material = rayrender::diffuse,
+#'     material_args = list(sigma = 0.3)
+#'   ) |>
+#'   render_model(pathtrace = TRUE, width = 800, height = 800, samples = 32)
+#'
+#' # A toon material changes the raster shader and pass FSAA to render_model()
+#' # so rayvertex adds anti-aliasing.
+#' shiny_toon_material = rayvertex::material_list(
+#'   type = "toon_phong",
+#'   toon_levels = 3,
+#'   toon_outline_width = 10,
+#'   toon_outline_color = "white"
+#' )
+#' morphine_model = read_sdf(get_example_molecule("morphine"))
+#' morphine_model |>
+#'   generate_full_scene(
+#'     material_vertex = shiny_toon_material
+#'   ) |>
+#'   render_model(
+#'     fsaa = 2,
+#'     pathtrace = FALSE,
+#'     width = 800,
+#'     height = 800,
+#'     background = "grey50"
+#'   )
 generate_full_scene = function(
-	model,
-	x = 0,
-	y = 0,
-	z = 0,
-	scale = 1,
-	center = TRUE,
-	pathtrace = TRUE,
-	force_single_bonds = FALSE,
-	material = rayrender::glossy,
-	material_vertex = material_list(type = "phong")
+  model,
+  x = 0,
+  y = 0,
+  z = 0,
+  scale = 1,
+  center = TRUE,
+  force_single_bonds = FALSE,
+  material = rayrender::glossy,
+  material_args = list(),
+  material_vertex = material_list(type = "phong")
 ) {
-	mat_info = material()
-	mat_info = mat_info[[1]]
-	# c("glossy","diffuse", "dielectric")
-	if (!mat_info$type %in% c(7L, 1L, 3L)) {
-		stop("material() must be either `glossy`, `diffuse`, or `dielectric`")
-	}
-	atoms = model$atoms
-	atoms$x = atoms$x * scale
-	atoms$y = atoms$y * scale
-	atoms$z = atoms$z * scale
-	if (center) {
-		atoms$x = atoms$x - mean(range(atoms$x))
-		atoms$y = atoms$y - mean(range(atoms$y))
-		atoms$z = atoms$z - mean(range(atoms$z))
-	}
-	atoms$x = atoms$x + x
-	atoms$y = atoms$y + y
-	atoms$z = atoms$z + z
-	bonds = model$bonds
+  material_vertex = resolve_mesh_material(
+    material = material,
+    material_vertex = material_vertex,
+    use_material = !missing(material) && missing(material_vertex),
+    material_args = material_args,
+    package_args = list(color = "white", image_texture = "")
+  )
+  atoms = model$atoms
+  atoms$x = atoms$x * scale
+  atoms$y = atoms$y * scale
+  atoms$z = atoms$z * scale
+  if (center) {
+    atoms$x = atoms$x - mean(range(atoms$x))
+    atoms$y = atoms$y - mean(range(atoms$y))
+    atoms$z = atoms$z - mean(range(atoms$z))
+  }
+  atoms$x = atoms$x + x
+  atoms$y = atoms$y + y
+  atoms$z = atoms$z + z
 
-	if (pathtrace) {
-		scenelist = list()
-		counter = 1
-		for (i in seq_len(nrow(atoms))) {
-			if (atoms$type[i] != "C") {
-				atomcol = PeriodicTable::atomColor(atoms$type[i])
-			} else {
-				atomcol = "grey5"
-			}
-			atomsize = (PeriodicTable::mass(atoms$type[i]) / 14)^(1 / 3)
-			scenelist[[counter]] = sphere(
-				x = atoms$x[i],
-				y = atoms$y[i],
-				z = atoms$z[i],
-				radius = atomsize / 2,
-				material = material(color = atomcol)
-			)
-			counter = counter + 1
-		}
-		bondlist = list()
-		counter = 1
-		for (i in seq_len(nrow(bonds))) {
-			bond1 = atoms$index == bonds[i, 1]
-			bond2 = atoms$index == bonds[i, 2]
-			if (bonds[i, 3] == 1 || force_single_bonds) {
-				if (any(bond1) && any(bond2)) {
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]),
-						end = as.numeric(atoms[bond2, 1:3]),
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-				}
-			} else if (bonds[i, 3] == 2) {
-				if (any(bond1) && any(bond2)) {
-					dir = as.numeric(atoms[bond2, 1:3]) - as.numeric(atoms[bond1, 1:3])
-					onb = onb_from_w(dir)
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]) + onb[3, ] / 8,
-						end = as.numeric(atoms[bond2, 1:3]) + onb[3, ] / 8,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
+  scene = list()
+  cntr = 1
+  for (i in seq_len(nrow(atoms))) {
+    if (atoms$type[i] != "C") {
+      atomcol = PeriodicTable::atomColor(atoms$type[i])
+    } else {
+      atomcol = "grey5"
+    }
+    material_atom = material_vertex
+    material_atom$diffuse = convert_color(atomcol)
+    material_atom$ambient = convert_color(atomcol)
+    material_atom$ambient_intensity = 0.3
+    material_atom = update_rayrender_material_package_args(
+      material_atom,
+      package_args = list(color = atomcol, image_texture = "")
+    )
+    atomsize = (PeriodicTable::mass(atoms$type[i]) / 14)^(1 / 3)
+    scene[[cntr]] = sphere_mesh(
+      position = c(atoms$x[i], atoms$y[i], atoms$z[i]),
+      radius = atomsize / 2,
+      low_poly = FALSE,
+      material = material_atom
+    )
+    cntr = cntr + 1
+  }
 
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]) - onb[3, ] / 8,
-						end = as.numeric(atoms[bond2, 1:3]) - onb[3, ] / 8,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-				}
-			} else if (bonds[i, 3] == 3) {
-				if (any(bond1) && any(bond2)) {
-					dir = as.numeric(atoms[bond2, 1:3]) - as.numeric(atoms[bond1, 1:3])
-					onb = onb_from_w(dir)
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]) + onb[3, ] / 4,
-						end = as.numeric(atoms[bond2, 1:3]) + onb[3, ] / 4,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
+  get_segment_offsets = function(start, end, bond_order) {
+    zero_offset = c(0, 0, 0)
+    if (bond_order == 1 || force_single_bonds) {
+      return(list(zero_offset))
+    }
+    dir = end - start
+    onb = onb_from_w(dir)
+    if (bond_order == 2) {
+      offset = onb[3, ] / 8
+      return(list(offset, -offset))
+    }
+    if (bond_order == 3) {
+      offset = onb[3, ] / 4
+      return(list(offset, -offset, zero_offset))
+    }
+    return(NULL)
+  }
 
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]) - onb[3, ] / 4,
-						end = as.numeric(atoms[bond2, 1:3]) - onb[3, ] / 4,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]),
-						end = as.numeric(atoms[bond2, 1:3]),
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-				}
-			}
-		}
+  material_bond = material_vertex
+  material_bond$diffuse = convert_color("grey33")
+  material_bond$ambient = convert_color("grey33")
+  material_bond$ambient_intensity = 0.3
+  material_bond = update_rayrender_material_package_args(
+    material_bond,
+    package_args = list(color = "grey33", image_texture = "")
+  )
+  bonds = model$bonds
+  for (i in seq_len(nrow(bonds))) {
+    bond1 = atoms$index == bonds[i, 1]
+    bond2 = atoms$index == bonds[i, 2]
+    if (!any(bond1) || !any(bond2)) {
+      next
+    }
 
-		atom_scene = do.call(rbind, scenelist)
-		bond_scene = do.call(rbind, bondlist)
-		return(add_object(atom_scene, bond_scene))
-	} else {
-		scene = list()
-		cntr = 1
-		for (i in seq_len(nrow(atoms))) {
-			if (atoms$type[i] != "C") {
-				atomcol = PeriodicTable::atomColor(atoms$type[i])
-			} else {
-				atomcol = "grey5"
-			}
-			material_atom = material_vertex
-			material_atom$diffuse = convert_color(atomcol)
-			material_atom$ambient = convert_color(atomcol)
-			material_atom$ambient_intensity = 0.3
-			atomsize = (PeriodicTable::mass(atoms$type[i]) / 14)^(1 / 3)
-			scene[[cntr]] =
-				sphere_mesh(
-					position = c(atoms$x[i], atoms$y[i], atoms$z[i]),
-					radius = atomsize / 2,
-					low_poly = FALSE,
-					material = material_atom
-				)
-			cntr = cntr + 1
-		}
-		material_bond = material_vertex
-		material_atom$diffuse = convert_color("grey33")
-		material_atom$ambient = convert_color("grey33")
-		material_atom$ambient_intensity = 0.3
-		for (i in seq_len(nrow(bonds))) {
-			bond1 = atoms$index == bonds[i, 1]
-			bond2 = atoms$index == bonds[i, 2]
-			if (bonds[i, 3] == 1 || force_single_bonds) {
-				if (any(bond1) && any(bond2)) {
-					scene[[cntr]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]),
-							end = as.numeric(atoms[bond2, 1:3]),
-							radius = 1 / 10,
-							material = material_bond
-						)
-					cntr = cntr + 1
-				}
-			} else if (bonds[i, 3] == 2) {
-				if (any(bond1) && any(bond2)) {
-					dir = as.numeric(atoms[bond2, 1:3]) - as.numeric(atoms[bond1, 1:3])
-					onb = onb_from_w(dir)
-					scene[[cntr]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]) + onb[3, ] / 8,
-							end = as.numeric(atoms[bond2, 1:3]) + onb[3, ] / 8,
-							radius = 1 / 10,
-							material = material_bond
-						)
-					cntr = cntr + 1
-					scene[[cntr]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]) - onb[3, ] / 8,
-							end = as.numeric(atoms[bond2, 1:3]) - onb[3, ] / 8,
-							radius = 1 / 10,
-							material = material_bond
-						)
-					cntr = cntr + 1
-				}
-			} else if (bonds[i, 3] == 3) {
-				if (any(bond1) && any(bond2)) {
-					dir = as.numeric(atoms[bond2, 1:3]) - as.numeric(atoms[bond1, 1:3])
-					onb = onb_from_w(dir)
-					scene[[cntr]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]) + onb[3, ] / 4,
-							end = as.numeric(atoms[bond2, 1:3]) + onb[3, ] / 4,
-							radius = 1 / 10,
-							material = material_bond
-						)
-					cntr = cntr + 1
-					scene[[cntr]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]) - onb[3, ] / 4,
-							end = as.numeric(atoms[bond2, 1:3]) - onb[3, ] / 4,
-							radius = 1 / 10,
-							material = material_bond
-						)
-					cntr = cntr + 1
-					scene[[cntr]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]),
-							end = as.numeric(atoms[bond2, 1:3]),
-							radius = 1 / 10,
-							material = material_bond
-						)
-					cntr = cntr + 1
-				}
-			}
-		}
-		return(rayvertex::scene_from_list(scene))
-	}
+    start = as.numeric(atoms[bond1, c("x", "y", "z")])
+    end = as.numeric(atoms[bond2, c("x", "y", "z")])
+    segment_offsets = get_segment_offsets(start, end, bonds[i, 3])
+    if (is.null(segment_offsets)) {
+      next
+    }
+
+    for (offset in segment_offsets) {
+      scene[[cntr]] = segment_mesh(
+        start = start + offset,
+        end = end + offset,
+        radius = 1 / 10,
+        material = material_bond
+      )
+      cntr = cntr + 1
+    }
+  }
+
+  return(rayvertex::scene_from_list(scene))
 }

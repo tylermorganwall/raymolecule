@@ -149,13 +149,43 @@ test_that("ribbon mesh is indexed, capped, watertight, and UV-bounded", {
   edge_counts = mesh_edge_table(mesh$indices)
   expect_true(all(as.integer(edge_counts) == 2L))
 
+  first_ring_rows = seq_len(ring_size + 1L)
+  first_ring_v = mesh$texcoords[first_ring_rows, 2]
   ring_u = mesh$texcoords[
     seq(1, ring_count * (ring_size + 1L), by = ring_size + 1L),
     1
   ]
+  expect_gt(diff(range(first_ring_v)), 0.9)
   expect_true(all(diff(ring_u) >= -1e-8))
+  expect_equal(ring_u[1], 0, tolerance = 1e-8)
+  expect_equal(
+    ring_u[length(ring_u)],
+    raymolecule:::ribbon_texture_u_max(),
+    tolerance = 1e-8
+  )
+  expect_lt(ring_u[length(ring_u)], 1)
   expect_true(all(mesh$texcoords >= 0 - 1e-8))
   expect_true(all(mesh$texcoords <= 1 + 1e-8))
+
+  side_triangle_count = (ring_count - 1L) * ring_size * 2L
+  cap_tex_indices = mesh$tex_indices[
+    (side_triangle_count + 1L):nrow(mesh$tex_indices),
+    ,
+    drop = FALSE
+  ]
+  start_center_tex = ring_count * (ring_size + 1L)
+  end_center_tex = start_center_tex + 1L
+  expect_true(all(
+    cap_tex_indices[c(TRUE, FALSE), , drop = FALSE] == start_center_tex
+  ))
+  expect_true(all(
+    cap_tex_indices[c(FALSE, TRUE), , drop = FALSE] == end_center_tex
+  ))
+  expect_equal(mesh$texcoords[start_center_tex + 1L, ], c(0, 0.5))
+  expect_equal(
+    mesh$texcoords[end_center_tex + 1L, ],
+    c(raymolecule:::ribbon_texture_u_max(), 0.5)
+  )
 })
 
 test_that("cross-section resolution controls ribbon ring density", {

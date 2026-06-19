@@ -4,10 +4,17 @@ pkgdown_sha: 2f40b4769ea9ad2312aa4cc93f27ab116461543b
 articles: []
 url: https://www.raymolecule.com
 
+figures:
+  dpi: 200
+  fig.width: 8
+  fig.height: 8
+  fig.retina: 1
+
 reference:
   - title: "Read Data"
     desc: "Functions to parse and load molecule information from files."
     contents:
+      - download_pdb
       - starts_with("read")
   - title: "Generate Rayrender Scene"
     desc: "Functions for generating objects to add to scenes"
@@ -21,10 +28,6 @@ reference:
     desc: "Function to get included example data."
     contents:
       - starts_with("get")
-  - title: "pkgdown utils"
-    desc: "Internal but must be exported to meet CRAN guidelines"
-    contents:
-      - starts_with("run")
 
 navbar:
   title: "raymolecule"

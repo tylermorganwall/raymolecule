@@ -24,7 +24,7 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/tylermorganwall/raymolecule/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/tylermorganwall/raymolecule/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-`raymolecule` is an R package to parse and render molecules in 3D. Rendering is powered by two packages: [rayrender](https://www.rayrender.net/) package, a pathtracer for R, and [rayvertex](https://www.rayvertex.com/), a rasterizer for R. `raymolecule` currently supports and parses SDF (structure-data file) and PDB (Protein Data Bank) files and returns a `rayrender` scene, which we then pathtrace and visualize in R. This initial release of the package only supports visualizing atoms and bonds.
+`raymolecule` is an R package to parse and render molecules in 3D. Rendering is powered by two packages: [rayrender](https://www.rayrender.net/) package, a pathtracer for R, and [rayvertex](https://www.rayvertex.com/), a rasterizer for R. `raymolecule` supports SDF (structure-data file) and PDB (Protein Data Bank) files and can render atom/bond models, ligand overlays, and protein ribbon cartoons.
 
 ## Installation
 
@@ -49,8 +49,8 @@ get_example_molecule("benzene") |>
 
 ```
 
-Alternatively, you can fetch any molecule from [PubChem](https://pubchem.ncbi.nlm.nih.gov) by passing either the molecule name. You can also fetch a molecule using the official compound ID (CID), in case you have a specific molecule with a long name or unique isoform:  
-  
+Alternatively, you can fetch any molecule from [PubChem](https://pubchem.ncbi.nlm.nih.gov) by passing either the molecule name. You can also fetch a molecule using the official compound ID (CID), in case you have a specific molecule with a long name or unique isoform:
+
 ```{r}
 str(get_molecule("estradiol"))
 
@@ -58,8 +58,23 @@ str(get_molecule(5757)) #this is the CID for estradiol (aka estrogen)
 
 ```
 
-We can then pass the list from `get_example_molecule() |> read_sdf()` or from `get_molecule()` to the `generate_full_scene()`, `generate_atom_scene()`, or `generate_bond_scene()` functions to convert this representation to a rayrender/rayvertex scene. This can then be passed on the `render_model()` function, which will call rayrender's `render_scene()` or rayvertex's `rasterize_scene()` functions to render it. This function automatically ensures the molecule is centered and in frame, and sets up lighting, and can accept arguments to rotate the molecule. For more rendering options, see `rayrender::render_scene()` and `rayvertex::rasterize_scene()`.
+We can then pass the list from `get_example_molecule() |> read_sdf()` or from `get_molecule()` to the `generate_full_scene()`, `generate_atom_scene()`, or `generate_bond_scene()` functions to convert this representation to a raymesh scene. This can then be passed on the `render_model()` function, which will call rayrender's `render_scene()` or rayvertex's `rasterize_scene()` functions depending on `pathtrace`. This function automatically ensures the molecule is centered and in frame, sets up lighting, and can accept arguments to rotate the molecule. For more rendering options, see `rayrender::render_scene()` and `rayvertex::rasterize_scene()`.
 
+The atom-only and bond-only builders are useful when you want to inspect the simpler pieces of a molecule before rendering a full ball-and-stick model.
+
+```{r atom-bond-scenes}
+#Render atoms only for a small built-in molecule
+get_example_molecule("benzene") |>
+	read_sdf() |>
+	generate_atom_scene() |>
+	render_model(width = 800, height = 800, samples = 32)
+
+#Render only the bond geometry for a simple built-in molecule
+get_example_molecule("cinnemaldehyde") |>
+	read_sdf() |>
+	generate_bond_scene() |>
+	render_model(width = 800, height = 800, samples = 32)
+```
 
 ```{r}
 #Specify a width, height, and number of samples for the image (more samples == less noise)
@@ -89,6 +104,7 @@ get_example_molecule("penicillin") |>
 	)
 
 ```
+
 We can use `rayvertex` to render images much more quickly and noise free, as well as include a toon cel-shading effect.
 
 ```{r}
@@ -97,8 +113,8 @@ library(rayvertex)
 #Render a basic example with rayvertex
 get_example_molecule("tubocurarine_chloride") |>
 	read_sdf() |>
-	generate_full_scene(pathtrace = FALSE) |>
-	render_model(width = 800, height = 800, background = "grey66")
+	generate_full_scene() |>
+	render_model(pathtrace = FALSE, width = 800, height = 800, background = "grey66")
 
 #Customize the material with toon shading
 shiny_toon_material = material_list(
@@ -109,16 +125,16 @@ shiny_toon_material = material_list(
 get_example_molecule("morphine") |>
 	read_sdf() |>
 	generate_full_scene(
-		pathtrace = FALSE,
 		material_vertex = shiny_toon_material
 	) |>
-	render_model(width = 800, height = 800, background = "grey66")
+	render_model(pathtrace = FALSE, width = 800, height = 800, background = "grey66")
 
 #Customize the lights with rayvertex
 get_example_molecule("skatole") |>
 	read_sdf() |>
-	generate_full_scene(pathtrace = FALSE) |>
+	generate_full_scene() |>
 	render_model(
+		pathtrace = FALSE,
 		width = 800,
 		height = 800,
 		angle = c(0, 30, 0),
@@ -129,7 +145,7 @@ get_example_molecule("skatole") |>
 
 ```
 
-You can turn off lighting in `render_model()` and customize the scene (adding different objects or lights) by using rayrender's `add_object()` function or rayvertex's `add_shape()` function. If you use `rayrender::render_scene()`/`rayvertex::rasterize_scene()` instead of `render_model()`, you have to set up the camera position and field of view yourself.
+You can turn off lighting in `render_model()` and customize the rendered output by using the lower-level rayrender or rayvertex APIs directly. If you use `rayrender::render_scene()`/`rayvertex::rasterize_scene()` instead of `render_model()`, you have to set up the camera position and field of view yourself.
 
 
 ```{r}
@@ -186,4 +202,19 @@ generate_ground(depth = -4, material = diffuse(color = "purple")) |>
 		lookat = c(0.80, 0.26, 3.91)
 	)
 
+```
+
+## Protein Data Bank Ribbons
+
+`raymolecule` can also download PDB structures from [RCSB](https://www.rcsb.org/), parse multi-model ensembles, and generate ribbon cartoons. This compact beta-barrel example renders a single PDB structure with UV ribbon coloring and hetero overlays.
+
+```{r pdb-examples}
+pdb_file = download_pdb("4fsp", out_dir = tempdir(), overwrite = TRUE)
+read_pdb(pdb_file, verbose = TRUE) |>
+	generate_ribbon_scene(
+		color_mode = "uv",
+		show_hetero_atoms = TRUE,
+		show_hetero_bonds = TRUE
+	) |>
+	render_model(pathtrace = FALSE, width = 800, height = 800, background = "grey12")
 ```

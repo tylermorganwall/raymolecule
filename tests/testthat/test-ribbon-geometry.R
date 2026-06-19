@@ -34,10 +34,18 @@ make_residue_table = function(ca_points, o_points, chain_id = "A") {
 test_that("centripetal Catmull-Rom centerline passes through CA knot positions", {
   points = matrix(
     c(
-      0, 0, 0,
-      1, 0, 0,
-      2, 1, 0,
-      3, 1, 0
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      2,
+      1,
+      0,
+      3,
+      1,
+      0
     ),
     ncol = 3,
     byrow = TRUE
@@ -58,7 +66,10 @@ test_that("rotation-minimizing frame normals stay sign-consistent on a helix-lik
 
   chain = raymolecule:::catmull_rom_chain(ca_points)
   sampled = raymolecule:::sample_catmull_rom_chain(chain, subdivisions = 4)
-  guides = raymolecule:::build_residue_guides(residues, sampled$residue_parameter)
+  guides = raymolecule:::build_residue_guides(
+    residues,
+    sampled$residue_parameter
+  )
   frame = raymolecule:::build_rotation_minimizing_frame(
     centerline = sampled$centerline,
     tangent = sampled$tangent,
@@ -68,7 +79,8 @@ test_that("rotation-minimizing frame normals stay sign-consistent on a helix-lik
   )
 
   dot_products = rowSums(
-    frame$normal[-1, , drop = FALSE] * frame$normal[-nrow(frame$normal), , drop = FALSE]
+    frame$normal[-1, , drop = FALSE] *
+      frame$normal[-nrow(frame$normal), , drop = FALSE]
   )
   step_angles = acos(pmin(1, pmax(-1, dot_products))) * 180 / pi
 
@@ -87,7 +99,10 @@ test_that("axial guide symmetry suppresses alternating sheet-like flips", {
 
   chain = raymolecule:::catmull_rom_chain(ca_points)
   sampled = raymolecule:::sample_catmull_rom_chain(chain, subdivisions = 4)
-  guides = raymolecule:::build_residue_guides(residues, sampled$residue_parameter)
+  guides = raymolecule:::build_residue_guides(
+    residues,
+    sampled$residue_parameter
+  )
   frame = raymolecule:::build_rotation_minimizing_frame(
     centerline = sampled$centerline,
     tangent = sampled$tangent,
@@ -97,7 +112,8 @@ test_that("axial guide symmetry suppresses alternating sheet-like flips", {
   )
 
   dot_products = rowSums(
-    frame$normal[-1, , drop = FALSE] * frame$normal[-nrow(frame$normal), , drop = FALSE]
+    frame$normal[-1, , drop = FALSE] *
+      frame$normal[-nrow(frame$normal), , drop = FALSE]
   )
   step_angles = acos(pmin(1, pmax(-1, dot_products))) * 180 / pi
 
@@ -126,9 +142,21 @@ test_that("peptide-plane control guides remain sign-consistent across sheets", {
 
 test_that("chain breaks create separate ribbon shapes", {
   chain_a_1 = backbone_residue_lines(1, "A", 1, "ALA", c(0, 0, 0))
-  chain_a_2 = backbone_residue_lines(chain_a_1$next_serial, "A", 2, "GLY", c(1.5, 0.1, 0.2))
+  chain_a_2 = backbone_residue_lines(
+    chain_a_1$next_serial,
+    "A",
+    2,
+    "GLY",
+    c(1.5, 0.1, 0.2)
+  )
   chain_b_1 = backbone_residue_lines(20, "B", 1, "VAL", c(0, 4, 0))
-  chain_b_2 = backbone_residue_lines(chain_b_1$next_serial, "B", 2, "LEU", c(1.5, 4.2, 0.3))
+  chain_b_2 = backbone_residue_lines(
+    chain_b_1$next_serial,
+    "B",
+    2,
+    "LEU",
+    c(1.5, 4.2, 0.3)
+  )
 
   file = write_pdb_fixture(c(
     chain_a_1$lines,
@@ -142,7 +170,7 @@ test_that("chain breaks create separate ribbon shapes", {
   on.exit(unlink(file), add = TRUE)
 
   model = read_pdb(file)
-  scene = generate_ribbon_scene(model, pathtrace = FALSE, subdivisions = 2)
+  scene = generate_ribbon_scene(model, subdivisions = 2)
 
   expect_equal(length(scene$shapes), 2)
 })
@@ -150,8 +178,12 @@ test_that("chain breaks create separate ribbon shapes", {
 test_that("ribbon sampling is refined beyond the requested minimum step count", {
   ca_points = matrix(
     c(
-      0, 0, 0,
-      3.8, 0, 0
+      0,
+      0,
+      0,
+      3.8,
+      0,
+      0
     ),
     ncol = 3,
     byrow = TRUE

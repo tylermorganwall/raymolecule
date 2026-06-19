@@ -3,6 +3,7 @@
 .RData
 .Ruserdata
 docs
+pdb_*/
 
 /.quarto/
 cache/__packages

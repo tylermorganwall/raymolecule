@@ -11,8 +11,8 @@ generate_atom_scene(
   z = 0,
   scale = 1,
   center = TRUE,
-  pathtrace = TRUE,
   material = rayrender::glossy,
+  material_args = list(),
   material_vertex = material_list(type = "phong")
 )
 }
@@ -29,41 +29,72 @@ generate_atom_scene(
 
 \item{center}{Default `TRUE`. Centers the bounding box of the model.}
 
-\item{pathtrace}{Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.}
+\item{material}{Default `rayrender::glossy`. Optional rayrender material
+used to initialize the mesh material when `material_vertex` is not
+supplied. Must be either `glossy`, `diffuse`, or `dielectric`.}
 
-\item{material}{Default `rayrender::glossy`. Rayrender material to use when `pathtrace = TRUE`. Must be either `glossy`, `diffuse`, or `dielectric`.}
+\item{material_args}{Default `list()`. Named list of additional arguments
+passed to `material`. Arguments supplied by raymolecule for colors and
+textures override entries with the same names. For example, use
+`list(gloss = 0.35, reflectance = 0.12)` with `rayrender::glossy`, or
+`list(sigma = 0.4)` with `rayrender::diffuse`.}
 
-\item{material_vertex}{Default `rayvertex::material_list()`. Material to use when `pathtrace = FALSE`.
+\item{material_vertex}{Default `rayvertex::material_list()`. Mesh material.
 `diffuse`/`ambient` colors and `ambient_intensity` are determined automatically, but all other material
 properties can be changed.}
 }
 \value{
-Rayrender/rayvertex scene containing only the atoms in a molecule/protein.
+Raymesh scene containing only the atoms in a molecule/protein.
 }
 \description{
-Reads an SDF file and extracts the 3D molecule model
+Builds a scene containing only atom spheres from a PDB or SDF model.
 }
 \examples{
-#Generate a scene with caffeine molecule with just the atoms
-\donttest{
-get_example_molecule("caffeine") |>
-  read_sdf() |>
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
+atom_model = read_sdf(get_example_molecule("benzene"))
+
+# Start with a centered raster atom scene using the default atom colors.
+atom_model |>
   generate_atom_scene() |>
-  render_model(samples=256,sample_method="sobol_blue")
+  render_model(
+    pathtrace = FALSE,
+    width = 800,
+    height = 800,
+    background = "grey15"
+  )
 
-#Generate a rayvertex scene, using toon shading
-shiny_toon_material = rayvertex::material_list(type="toon_phong",
-                                               toon_levels=3,
-                                               toon_outline_width=0.1)
-get_example_molecule("caffeine") |>
-  read_sdf() |>
-  generate_atom_scene(pathtrace=FALSE, material_vertex = shiny_toon_material) |>
-  render_model(background="white")
+# This version shifts and scales the same atoms, then uses a diffuse mesh
+# material for the spheres before pathtracing.
+atom_model |>
+  generate_atom_scene(
+    x = -1,
+    y = 0,
+    z = 1,
+    scale = 0.75,
+    center = TRUE,
+    material = rayrender::diffuse,
+    material_args = list(sigma = 0.4)
+  ) |>
+  render_model(pathtrace = TRUE, width = 800, height = 800, samples = 32)
 
-#Generate a scene with caffeine, reducing the inter-atom spacing
-get_example_molecule("caffeine") |>
-  read_sdf() |>
-  generate_atom_scene(scale=0.5) |>
-  render_model(samples=256,sample_method="sobol_blue")
-}
+# The toon material changes only the raster shader. Keeping `center = TRUE`
+# makes the result easy to compare to the baseline scene above.
+toon_material = rayvertex::material_list(
+  type = "toon_phong",
+  toon_levels = 3,
+  toon_outline_width = 0.08
+)
+caffeine_model = read_sdf(get_example_molecule("caffeine"))
+caffeine_model |>
+  generate_atom_scene(
+    center = TRUE,
+    material_vertex = toon_material
+  ) |>
+  render_model(
+    pathtrace = FALSE,
+    width = 800,
+    height = 800,
+    background = "grey15"
+  )
+\dontshow{\}) # examplesIf}
 }

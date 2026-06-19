@@ -16,10 +16,7 @@
 #' @param center Default `TRUE`. Centers the bounding box of the model.
 #' @param model_id Default `NA_integer_`. PDB `MODEL` identifier(s) to render.
 #'   The default `NA` renders all parsed models in the ensemble.
-#' @param pathtrace Default `TRUE`. If `FALSE`, a `rayvertex` mesh scene is
-#'   returned. If `TRUE`, a `rayrender` scene is returned from the same mesh
-#'   data.
-#' @param ribbon_width Default `1.6`. Width of the ribbon cross-section.
+#' @param ribbon_width Default `2`. Width of the ribbon cross-section.
 #' @param ribbon_thickness Default `0.25`. Thickness of the ribbon
 #'   cross-section.
 #' @param cross_section_resolution Default `24`. Number of perimeter vertices
@@ -33,10 +30,20 @@
 #'   Used when `color_mode = "chain"`.
 #' @param texture Optional texture path. Used when `color_mode = "uv"`. If
 #'   omitted in UV mode, a built-in rainbow gradient is used.
-#' @param material Default `rayrender::glossy`. Rayrender material template to
-#'   use when `pathtrace = TRUE`.
+#' @param material Default `rayrender::glossy`. Optional rayrender material
+#'   used to initialize the mesh material when `material_vertex` is not
+#'   supplied. Must be either `glossy`, `diffuse`, or `dielectric`.
+#' @param material_args Default `list()`. Named list of additional arguments
+#'   passed to `material`. Arguments supplied by raymolecule for colors and
+#'   textures override entries with the same names. For example, use
+#'   `list(gloss = 0.35, reflectance = 0.12)` with `rayrender::glossy`, or
+#'   `list(sigma = 0.4)` with `rayrender::diffuse`.
 #' @param material_vertex Default `rayvertex::material_list(type = "phong")`.
-#'   Rayvertex material template to use when `pathtrace = FALSE`.
+#'   Mesh material template.
+#' @param raster_ambient_mix Default `0.5`. Fraction of raster ribbon color
+#'   contributed by the ambient, unlit material channel. Values closer to `0`
+#'   emphasize diffuse directional lighting; values closer to `1` flatten
+#'   lighting and preserve texture/color more directly.
 #' @param show_hetero_atoms Default `TRUE`. If `TRUE`, display non-protein
 #'   `HETATM` records as bare spheres alongside the ribbon.
 #' @param show_hetero_bonds Default `TRUE`. If `TRUE`, display bonds between
@@ -47,21 +54,176 @@
 #'   `ATOM` records as small spheres alongside the ribbon.
 #' @param show_protein_bonds Default `FALSE`. If `TRUE`, display inferred
 #'   covalent bonds between protein `ATOM` records as a thin stick overlay.
+#' @param atom_scale Default `1`. Multiplier applied to the radii of optional
+#'   atom overlays.
+#' @param bond_width Default `1`. Multiplier applied to the radii of optional
+#'   bond overlays.
 #' @param use_vertex_normals Default `FALSE`. If `TRUE`, attach the ribbon
-#'   mesh's swept vertex normals. If `FALSE`, raster scenes omit explicit
-#'   normals and pathtraced scenes use flat face normals.
+#'   mesh's swept vertex normals. If `FALSE`, scenes omit explicit vertex
+#'   normals and pathtraced renders use flat face normals.
 #' @param verbose Default `FALSE`. If `TRUE`, report the PDB name and model
 #'   identifiers being rendered.
 #'
-#' @return Rayrender/rayvertex scene containing a ribbon mesh.
+#' @return Raymesh scene containing a ribbon mesh.
 #' @export
 #'
-#' @examples
-#' if (file.exists("3nir.pdb")) {
-#'   read_pdb("3nir.pdb") |>
-#'     generate_ribbon_scene(pathtrace = FALSE) |>
-#'     render_model()
-#' }
+#' @examplesIf interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")
+#' ribbon_file = download_pdb("2w5o", out_dir = tempdir(), overwrite = TRUE)
+#' ribbon_model = read_pdb(ribbon_file, verbose = TRUE)
+#'
+#' # Start with a centered raster ribbon using the default ribbon width,
+#' # thickness, color mode, and ligand overlays.
+#' ribbon_model |>
+#'   generate_ribbon_scene() |>
+#'   render_model(
+#'     pathtrace = FALSE,
+#'     width = 800,
+#'     height = 800,
+#'     background = "grey12"
+#'   )
+#'
+#' # This pathtraced version widens the ribbon, increases cross-section
+#' # resolution, applies a custom UV texture, turns on atom/bond overlays, and
+#' # uses the mesh vertex normals.
+#' texture_file = tempfile(fileext = ".png")
+#' grDevices::png(texture_file, width = 64, height = 8, bg = "transparent")
+#' graphics::par(mar = c(0, 0, 0, 0))
+#' graphics::image(
+#'   matrix(seq(0, 1, length.out = 64), ncol = 1),
+#'   col = grDevices::hcl.colors(64, "Spectral", rev = TRUE),
+#'   axes = FALSE,
+#'   xlab = "",
+#'   ylab = ""
+#' )
+#' grDevices::dev.off()
+#'
+#' ribbon_model |>
+#'   generate_ribbon_scene(
+#'     x = 0,
+#'     y = 0,
+#'     z = 0,
+#'     scale = 1,
+#'     center = TRUE,
+#'     ribbon_width = 1.8,
+#'     ribbon_thickness = 0.3,
+#'     cross_section_resolution = 32,
+#'     subdivisions = 10,
+#'     color_mode = "uv",
+#'     texture = texture_file,
+#'     material = rayrender::diffuse,
+#'     material_args = list(sigma = 0.2),
+#'     show_hetero_atoms = TRUE,
+#'     show_hetero_bonds = TRUE,
+#'     show_waters = TRUE,
+#'     show_protein_atoms = TRUE,
+#'     show_protein_bonds = TRUE,
+#'     atom_scale = 1.2,
+#'     bond_width = 0.8,
+#'     use_vertex_normals = TRUE,
+#'     verbose = TRUE
+#'   ) |>
+#'   render_model(pathtrace = TRUE, width = 800, height = 800, samples = 32)
+#'
+#' # Start the beta-barrel example with the default UV texture in raster mode.
+#' # We rotate the model to match the render in the protein data bank.
+#' barrel_model = read_pdb(download_pdb("4fsp", out_dir = tempdir()))
+#' barrel_scene = barrel_model |>
+#'   generate_ribbon_scene(color_mode = "uv", raster_ambient_mix = 0.7)
+#' barrel_render = render_model(
+#'   barrel_scene,
+#'   pathtrace = FALSE,
+#'   width = 500,
+#'   height = 500,
+#'   background = "white",
+#'   lookfrom = c(-89.95, 66.11, -109.95),
+#'   angle = c(-60, 270, 180),
+#'   lookat = c(6.06, -7.62, 1.41),
+#'   fov = 27.2,
+#'   plot = FALSE
+#' )
+#'
+#' pdb_4fsp_image = rayimage::render_title(system.file(
+#'   "extdata",
+#'   "4fsp_assembly-1.jpeg",
+#'   package = "raymolecule",
+#'   mustWork = TRUE
+#' ), title_text = "Protein Data Bank Render")
+#'
+#' ray_4fsp_image = rayimage::render_title(
+#'   barrel_render,
+#'   title_text = "Raymolecule Render"
+#' )
+#' rayimage::plot_image_grid(list(pdb_4fsp_image, ray_4fsp_image),dim=c(1,2))
+#' # Raising the raster ambient mix gives the same barrel less directional
+#' # lighting
+#' barrel_model |>
+#'   generate_ribbon_scene(
+#'     color_mode = "uv",
+#'     texture = NULL,
+#'     raster_ambient_mix = 0.8
+#'   ) |>
+#'   render_model(
+#'     pathtrace = FALSE,
+#'     width = 800,
+#'     height = 800,
+#'     background = "grey12"
+#'   )
+#'
+#' # Start the multi-chain example with the automatic chain color palette.
+#' multi_chain_model = read_pdb(download_pdb("1xn1", out_dir = tempdir()))
+#' multi_chain_model |>
+#'   generate_ribbon_scene(color_mode = "chain") |>
+#'   render_model(
+#'     pathtrace = FALSE,
+#'     width = 800,
+#'     height = 800,
+#'     background = "grey80"
+#'   )
+#'
+#' # An explicit chain color map replaces the automatic palette without
+#' # changing the ribbon geometry.
+#' chain_ids = unique(multi_chain_model$residues$chain_id)
+#' chain_ids = chain_ids[!is.na(chain_ids)]
+#' chain_colors = stats::setNames(grDevices::rainbow(length(chain_ids)), chain_ids)
+#' multi_chain_model |>
+#'   generate_ribbon_scene(
+#'     color_mode = "chain",
+#'     chain_colors = chain_colors,
+#'     material_vertex = rayvertex::material_list(type = "phong")
+#'   ) |>
+#'   render_model(
+#'     pathtrace = FALSE,
+#'     width = 800,
+#'     height = 800,
+#'     background = "grey80"
+#'   )
+#'
+#' # Start the NMR ensemble view by rendering every parsed model.
+#' ensemble_model = read_pdb(download_pdb("1co1", out_dir = tempdir()))
+#' ensemble_model |>
+#'   generate_ribbon_scene(center = FALSE) |>
+#'   render_model(
+#'     pathtrace = TRUE,
+#'     fov=26,
+#'		 lookfrom = c(-45.95, 58.56, 79.95),
+#'		 lookat = c(-7.19, 3.87, -1.52) ,
+#'     width = 800,
+#'     height = 800,
+#'     background = "black"
+#'   )
+#'
+#' # Selecting three model IDs shows a cleaner subset of the same ensemble.
+#' ensemble_model |>
+#'	 generate_ribbon_scene(model_id = c(1L, 5L, 10L), center = FALSE) |>
+#'	 render_model(
+#'		 pathtrace = TRUE,
+#'     fov=26,
+#'		 lookfrom = c(-45.95, 58.56, 79.95),
+#'		 lookat = c(-7.19, 3.87, -1.52) ,
+#'		 width = 800,
+#'		 height = 800,
+#'		 background = "black"
+#'	 )
 generate_ribbon_scene = function(
   model,
   x = 0,
@@ -70,8 +232,7 @@ generate_ribbon_scene = function(
   scale = 1,
   center = TRUE,
   model_id = NA_integer_,
-  pathtrace = TRUE,
-  ribbon_width = 1.6,
+  ribbon_width = 2,
   ribbon_thickness = 0.25,
   cross_section_resolution = 24,
   subdivisions = 8,
@@ -79,12 +240,16 @@ generate_ribbon_scene = function(
   chain_colors = NULL,
   texture = NULL,
   material = rayrender::glossy,
+  material_args = list(),
   material_vertex = rayvertex::material_list(type = "phong"),
+  raster_ambient_mix = 0.5,
   show_hetero_atoms = TRUE,
   show_hetero_bonds = TRUE,
   show_waters = FALSE,
   show_protein_atoms = FALSE,
   show_protein_bonds = FALSE,
+  atom_scale = 1,
+  bond_width = 1,
   use_vertex_normals = FALSE,
   verbose = FALSE
 ) {
@@ -96,6 +261,20 @@ generate_ribbon_scene = function(
   }
   if (length(scale) != 1L || !is.finite(scale) || scale <= 0) {
     stop("scale must be a positive number")
+  }
+  if (length(atom_scale) != 1L || !is.finite(atom_scale) || atom_scale <= 0) {
+    stop("atom_scale must be a positive number")
+  }
+  if (length(bond_width) != 1L || !is.finite(bond_width) || bond_width <= 0) {
+    stop("bond_width must be a positive number")
+  }
+  if (
+    length(raster_ambient_mix) != 1L ||
+      !is.finite(raster_ambient_mix) ||
+      raster_ambient_mix < 0 ||
+      raster_ambient_mix > 1
+  ) {
+    stop("raster_ambient_mix must be a finite number between 0 and 1")
   }
   model = select_pdb_models(model, model_id)
   if (verbose) {
@@ -212,6 +391,7 @@ generate_ribbon_scene = function(
     show_protein_bonds = show_protein_bonds
   )
 
+  use_material = !missing(material) && missing(material_vertex)
   mesh_list = vector(mode = "list", length = length(mesh_data$chains))
   for (i in seq_along(mesh_data$chains)) {
     chain_mesh = mesh_data$chains[[i]]
@@ -223,9 +403,10 @@ generate_ribbon_scene = function(
     )
 
     mesh_material = prepare_ribbon_material(
-      pathtrace = pathtrace,
       material = material,
       material_vertex = material_vertex,
+      use_material = use_material,
+      material_args = material_args,
       color_mode = color_mode,
       chain_id = chain_mesh$chain_id,
       chain_color = if (is.null(chain_color_lookup)) {
@@ -233,7 +414,8 @@ generate_ribbon_scene = function(
       } else {
         chain_color_lookup[chain_mesh$chain_id][[1]]
       },
-      texture = texture
+      texture = texture,
+      raster_ambient_mix = raster_ambient_mix
     )
 
     if (use_vertex_normals) {
@@ -242,22 +424,6 @@ generate_ribbon_scene = function(
         indices = chain_mesh$indices,
         normals = chain_mesh$normals,
         norm_indices = chain_mesh$norm_indices,
-        texcoords = chain_mesh$texcoords,
-        tex_indices = chain_mesh$tex_indices,
-        material = mesh_material
-      )
-    } else if (pathtrace) {
-      flat_normals = build_flat_mesh_normals(
-        vertices = chain_mesh$vertices,
-        indices = chain_mesh$indices,
-        fallback_normals = chain_mesh$normals,
-        fallback_norm_indices = chain_mesh$norm_indices
-      )
-      mesh_list[[i]] = rayvertex::construct_mesh(
-        vertices = chain_mesh$vertices,
-        indices = chain_mesh$indices,
-        normals = flat_normals$normals,
-        norm_indices = flat_normals$norm_indices,
         texcoords = chain_mesh$texcoords,
         tex_indices = chain_mesh$tex_indices,
         material = mesh_material
@@ -272,7 +438,7 @@ generate_ribbon_scene = function(
       )
     }
   }
-  if (!pathtrace && nrow(visible_hetero_bonds) > 0L) {
+  if (nrow(visible_hetero_bonds) > 0L) {
     mesh_list = c(
       mesh_list,
       build_ribbon_bond_meshes(
@@ -282,11 +448,11 @@ generate_ribbon_scene = function(
         scale = scale,
         offset = offset,
         material_vertex = material_vertex,
-        bond_radius_scale = 0.6
+        bond_radius_scale = 1 * bond_width
       )
     )
   }
-  if (!pathtrace && nrow(visible_protein_bonds) > 0L) {
+  if (nrow(visible_protein_bonds) > 0L) {
     mesh_list = c(
       mesh_list,
       build_ribbon_bond_meshes(
@@ -296,11 +462,11 @@ generate_ribbon_scene = function(
         scale = scale,
         offset = offset,
         material_vertex = material_vertex,
-        bond_radius_scale = 0.14
+        bond_radius_scale = 0.2 * bond_width
       )
     )
   }
-  if (!pathtrace && nrow(visible_hetero_atoms) > 0L) {
+  if (nrow(visible_hetero_atoms) > 0L) {
     mesh_list = c(
       mesh_list,
       build_ribbon_atom_meshes(
@@ -309,11 +475,11 @@ generate_ribbon_scene = function(
         scale = scale,
         offset = offset,
         material_vertex = material_vertex,
-        atom_radius_scale = 0.45
+        atom_radius_scale = 0.45 * atom_scale
       )
     )
   }
-  if (!pathtrace && nrow(visible_protein_atoms) > 0L) {
+  if (nrow(visible_protein_atoms) > 0L) {
     mesh_list = c(
       mesh_list,
       build_ribbon_atom_meshes(
@@ -322,79 +488,13 @@ generate_ribbon_scene = function(
         scale = scale,
         offset = offset,
         material_vertex = material_vertex,
-        atom_radius_scale = 0.18
+        atom_radius_scale = 0.18 * atom_scale
       )
     )
   }
 
   mesh_scene = rayvertex::scene_from_list(mesh_list)
-
-  if (!pathtrace) {
-    return(mesh_scene)
-  }
-
-  ribbon_scene = rayrender::raymesh_model(
-    mesh_scene,
-    override_material = FALSE,
-    calculate_consistent_normals = FALSE,
-    recalculate_normals = FALSE
-  )
-  if (nrow(visible_hetero_bonds) > 0L) {
-    ribbon_scene = rayrender::add_object(
-      ribbon_scene,
-      build_ribbon_bond_objects(
-        atoms = visible_hetero_atoms,
-        bonds = visible_hetero_bonds,
-        center_shift = center_shift,
-        scale = scale,
-        offset = offset,
-        material = material,
-        bond_radius_scale = 0.6
-      )
-    )
-  }
-  if (nrow(visible_protein_bonds) > 0L) {
-    ribbon_scene = rayrender::add_object(
-      ribbon_scene,
-      build_ribbon_bond_objects(
-        atoms = visible_protein_bond_atoms,
-        bonds = visible_protein_bonds,
-        center_shift = center_shift,
-        scale = scale,
-        offset = offset,
-        material = material,
-        bond_radius_scale = 0.14
-      )
-    )
-  }
-  if (nrow(visible_hetero_atoms) > 0L) {
-    ribbon_scene = rayrender::add_object(
-      ribbon_scene,
-      build_ribbon_atom_objects(
-        atoms = visible_hetero_atoms,
-        center_shift = center_shift,
-        scale = scale,
-        offset = offset,
-        material = material,
-        atom_radius_scale = 0.45
-      )
-    )
-  }
-  if (nrow(visible_protein_atoms) > 0L) {
-    ribbon_scene = rayrender::add_object(
-      ribbon_scene,
-      build_ribbon_atom_objects(
-        atoms = visible_protein_atoms,
-        center_shift = center_shift,
-        scale = scale,
-        offset = offset,
-        material = material,
-        atom_radius_scale = 0.18
-      )
-    )
-  }
-
-  return(ribbon_scene)
+  return(mesh_scene)
 }
 
 #' @keywords internal
@@ -1022,7 +1122,7 @@ build_ribbon_bond_meshes = function(
     from_color = display_atom_color(from_atom$type)
     from_material$diffuse = convert_color(from_color)
     from_material$ambient = convert_color(from_color)
-    from_material$ambient_intensity = max(0.3, from_material$ambient_intensity)
+    from_material$ambient_intensity = max(0.1, from_material$ambient_intensity)
     meshes[[counter]] = rayvertex::segment_mesh(
       start = start,
       end = midpoint,
@@ -1089,108 +1189,31 @@ build_ribbon_atom_meshes = function(
 }
 
 #' @keywords internal
-build_ribbon_bond_objects = function(
-  atoms,
-  bonds,
-  center_shift,
-  scale,
-  offset,
-  material,
-  bond_radius_scale = 0.6
-) {
-  if (nrow(bonds) == 0L) {
-    return(NULL)
-  }
-
-  positions = transform_scene_points(
-    points = as.matrix(atoms[, c("x", "y", "z"), drop = FALSE]),
-    center_shift = center_shift,
-    scale = scale,
-    offset = offset
-  )
-  rownames(positions) = as.character(atoms$index)
-
-  objects = vector(mode = "list", length = nrow(bonds) * 2L)
-  counter = 1L
-  for (i in seq_len(nrow(bonds))) {
-    from_atom = atoms[match(bonds$from[i], atoms$index), , drop = FALSE]
-    to_atom = atoms[match(bonds$to[i], atoms$index), , drop = FALSE]
-    start = positions[as.character(bonds$from[i]), ]
-    end = positions[as.character(bonds$to[i]), ]
-    midpoint = (start + end) / 2
-    radius = ribbon_display_bond_radius(
-      from_atom$type,
-      to_atom$type,
-      scale = bond_radius_scale
-    )
-
-    objects[[counter]] = rayrender::segment(
-      start = start,
-      end = midpoint,
-      radius = radius,
-      material = material(color = display_atom_color(from_atom$type))
-    )
-    counter = counter + 1L
-    objects[[counter]] = rayrender::segment(
-      start = midpoint,
-      end = end,
-      radius = radius,
-      material = material(color = display_atom_color(to_atom$type))
-    )
-    counter = counter + 1L
-  }
-
-  return(do.call("rbind", objects))
-}
-
-#' @keywords internal
-build_ribbon_atom_objects = function(
-  atoms,
-  center_shift,
-  scale,
-  offset,
-  material,
-  atom_radius_scale = 0.45
-) {
-  if (nrow(atoms) == 0L) {
-    return(NULL)
-  }
-
-  positions = transform_scene_points(
-    points = as.matrix(atoms[, c("x", "y", "z"), drop = FALSE]),
-    center_shift = center_shift,
-    scale = scale,
-    offset = offset
-  )
-  objects = vector(mode = "list", length = nrow(atoms))
-  for (i in seq_len(nrow(atoms))) {
-    objects[[i]] = rayrender::sphere(
-      x = positions[i, 1],
-      y = positions[i, 2],
-      z = positions[i, 3],
-      radius = ribbon_display_atom_radius(
-        atoms$type[i],
-        scale = atom_radius_scale
-      ),
-      material = material(color = display_atom_color(atoms$type[i]))
-    )
-  }
-
-  return(do.call("rbind", objects))
-}
-
-#' @keywords internal
 prepare_ribbon_material = function(
-  pathtrace,
   material,
   material_vertex,
+  use_material,
+  material_args,
   color_mode,
   chain_id,
   chain_color,
-  texture
+  texture,
+  raster_ambient_mix
 ) {
-  if (pathtrace) {
-    mesh_material = rayrender_material_to_vertex_material(material)
+  if (use_material) {
+    package_args = list()
+    if (identical(color_mode, "chain") && !is.null(chain_color)) {
+      package_args$color = chain_color
+      package_args$image_texture = ""
+    } else if (identical(color_mode, "uv") && !is.null(texture)) {
+      package_args$color = "white"
+      package_args$image_texture = texture
+    }
+    mesh_material = rayrender_material_to_vertex_material(
+      material,
+      material_args = material_args,
+      package_args = package_args
+    )
   } else {
     mesh_material = material_vertex
   }
@@ -1204,9 +1227,12 @@ prepare_ribbon_material = function(
   } else if (!is.null(texture)) {
     mesh_material$diffuse = c(1, 1, 1)
     mesh_material$ambient = c(1, 1, 1)
-    mesh_material$ambient_intensity = 1
     mesh_material$diffuse_texname = texture
+    mesh_material$ambient_texname = texture
   }
+
+  mesh_material$ambient_intensity = raster_ambient_mix
+  mesh_material$diffuse_intensity = 1 - raster_ambient_mix
 
   return(mesh_material)
 }
@@ -1254,14 +1280,49 @@ default_ribbon_texture = local({
 })
 
 #' @keywords internal
-rayrender_material_to_vertex_material = function(material) {
-  material_info = material()
+resolve_mesh_material = function(
+  material,
+  material_vertex,
+  use_material,
+  material_args = list(),
+  package_args = list()
+) {
+  if (isTRUE(use_material)) {
+    return(rayrender_material_to_vertex_material(
+      material,
+      material_args = material_args,
+      package_args = package_args
+    ))
+  }
+  return(material_vertex)
+}
+
+#' @keywords internal
+rayrender_material_to_vertex_material = function(
+  material,
+  material_args = list(),
+  package_args = list()
+) {
+  if (!is.function(material)) {
+    stop("material must be a rayrender material function")
+  }
+
+  resolved_material_args = resolve_rayrender_material_args(
+    material = material,
+    material_args = material_args,
+    package_args = package_args
+  )
+  material_info = do.call(material, resolved_material_args)
+  if (!inherits(material_info, "ray_material") || length(material_info) == 0L) {
+    stop("material() must return a rayrender material")
+  }
+
   material_info = material_info[[1]]
-  if (!material_info$type %in% c(7L, 1L, 3L)) {
+  if (!material_info$type %in% c(7L, 4L, 1L, 3L)) {
     stop("material() must be either `glossy`, `diffuse`, or `dielectric`")
   }
 
-  base_color = material_info$properties[[1]]
+  base_color = material_info$properties[[1]][1:3]
   mesh_material = rayvertex::material_list(
     diffuse = base_color,
     ambient = base_color,
@@ -1269,9 +1330,26 @@ rayrender_material_to_vertex_material = function(material) {
     type = "phong"
   )
 
-  if (material_info$type == 1L) {
+  if (material_info$type %in% c(4L, 1L)) {
     mesh_material$type = "diffuse"
     mesh_material$specular = c(0, 0, 0)
+    mesh_material$specular_intensity = 0
+    if (length(material_info$sigma) == 1L && is.finite(material_info$sigma)) {
+      mesh_material$sigma = material_info$sigma
+    }
+  } else if (material_info$type == 7L) {
+    glossy_info = material_info$glossyinfo[[1]]
+    if (length(glossy_info) >= 6L && all(is.finite(glossy_info[4:6]))) {
+      reflectance = mean(glossy_info[4:6])
+      mesh_material$reflection_intensity = reflectance
+      mesh_material$specular_intensity = reflectance
+    }
+    if (length(glossy_info) >= 3L && all(is.finite(glossy_info[2:3]))) {
+      gloss = 1 - 2 * sqrt(mean(glossy_info[2:3]))
+      gloss = max(0, min(1, gloss))
+      mesh_material$reflection_sharpness = gloss
+      mesh_material$shininess = max(1, 100 * gloss)
+    }
   } else if (material_info$type == 3L) {
     mesh_material$type = "phong"
     if (length(material_info$properties[[1]]) >= 4L) {
@@ -1282,8 +1360,128 @@ rayrender_material_to_vertex_material = function(material) {
   if (!is.null(material_info$image) && nzchar(material_info$image)) {
     mesh_material$diffuse_texname = material_info$image
   }
+  if (
+    !is.null(material_info$bump_texture) && nzchar(material_info$bump_texture)
+  ) {
+    mesh_material$bump_texname = material_info$bump_texture
+  }
+  if (
+    !is.null(material_info$bump_intensity) &&
+      length(material_info$bump_intensity) == 1L &&
+      is.finite(material_info$bump_intensity)
+  ) {
+    mesh_material$bump_intensity = material_info$bump_intensity
+  }
 
+  mesh_material = attach_rayrender_material(
+    mesh_material = mesh_material,
+    material = material,
+    material_args = material_args,
+    package_args = package_args
+  )
   return(mesh_material)
+}
+
+#' @keywords internal
+attach_rayrender_material = function(
+  mesh_material,
+  material,
+  material_args = list(),
+  package_args = list()
+) {
+  material_args = validate_rayrender_material_args(
+    material_args,
+    "material_args"
+  )
+  package_args = validate_rayrender_material_args(package_args, "package_args")
+  attr(mesh_material, "raymolecule_rayrender_material") = do.call(
+    material,
+    resolve_rayrender_material_args(
+      material = material,
+      material_args = material_args,
+      package_args = package_args
+    )
+  )
+  attr(mesh_material, "raymolecule_rayrender_material_function") = material
+  attr(mesh_material, "raymolecule_rayrender_material_args") = material_args
+  attr(mesh_material, "raymolecule_rayrender_package_args") = package_args
+  return(mesh_material)
+}
+
+#' @keywords internal
+update_rayrender_material_package_args = function(
+  mesh_material,
+  package_args = list()
+) {
+  material = attr(mesh_material, "raymolecule_rayrender_material_function")
+  material_args = attr(mesh_material, "raymolecule_rayrender_material_args")
+  if (is.null(material) || is.null(material_args)) {
+    return(mesh_material)
+  }
+
+  attach_rayrender_material(
+    mesh_material = mesh_material,
+    material = material,
+    material_args = material_args,
+    package_args = package_args
+  )
+}
+
+#' @keywords internal
+resolve_rayrender_material_args = function(
+  material,
+  material_args = list(),
+  package_args = list()
+) {
+  material_args = validate_rayrender_material_args(
+    material_args,
+    "material_args"
+  )
+  package_args = validate_rayrender_material_args(package_args, "package_args")
+
+  material_formals = names(formals(material))
+  if (is.null(material_formals)) {
+    material_formals = character()
+  }
+  accepts_dots = "..." %in% material_formals
+
+  if (!accepts_dots) {
+    unknown_args = setdiff(names(material_args), material_formals)
+    if (length(unknown_args) > 0L) {
+      stop(sprintf(
+        "Unknown rayrender material argument(s): %s",
+        paste(unknown_args, collapse = ", ")
+      ))
+    }
+    package_args = package_args[names(package_args) %in% material_formals]
+  }
+
+  if (length(package_args) > 0L) {
+    material_args[names(package_args)] = package_args
+  }
+  return(material_args)
+}
+
+#' @keywords internal
+validate_rayrender_material_args = function(material_args, argument_name) {
+  if (is.null(material_args)) {
+    return(list())
+  }
+  if (!is.list(material_args)) {
+    stop(sprintf("%s must be a named list", argument_name))
+  }
+  if (length(material_args) == 0L) {
+    return(material_args)
+  }
+
+  arg_names = names(material_args)
+  if (is.null(arg_names) || any(is.na(arg_names) | !nzchar(arg_names))) {
+    stop(sprintf("%s must be a named list", argument_name))
+  }
+  if (anyDuplicated(arg_names)) {
+    stop(sprintf("%s must not contain duplicate names", argument_name))
+  }
+  return(material_args)
 }
 
 #' @keywords internal

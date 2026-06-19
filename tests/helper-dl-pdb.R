@@ -87,15 +87,13 @@ smoke_test_raymolecule = function(files, render = FALSE) {
         if (has_protein_ca) {
           scene = raymolecule::generate_ribbon_scene(
             model,
-            pathtrace = FALSE,
             show_waters = FALSE,
             cross_section_resolution = 8,
             subdivisions = 1
           )
         } else if (!is.null(model$atoms) && nrow(model$atoms) > 0L) {
           scene = raymolecule::generate_full_scene(
-            model,
-            pathtrace = FALSE
+            model
           )
         } else {
           stop("No renderable atoms were found in the PDB model")
@@ -104,7 +102,12 @@ smoke_test_raymolecule = function(files, render = FALSE) {
         result$render_ok = TRUE
 
         if (render) {
-          raymolecule::render_model(scene, width = 256, height = 256)
+          raymolecule::render_model(
+            scene,
+            pathtrace = FALSE,
+            width = 256,
+            height = 256
+          )
         }
 
         result

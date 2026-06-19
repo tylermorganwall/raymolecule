@@ -1936,6 +1936,7 @@ build_peptide_surface_chain_mesh = function(
     u_values = rep(0, ring_count)
   } else {
     u_values = arc_length / arc_length[ring_count]
+    u_values = pmin(u_values, ribbon_texture_u_max())
   }
 
   for (ring_index in seq_len(ring_count)) {
@@ -1966,7 +1967,7 @@ build_peptide_surface_chain_mesh = function(
   start_center_tex = ring_count * (ring_size + 1L) + 1L
   end_center_tex = start_center_tex + 1L
   texcoords[start_center_tex, ] = c(0, 0.5)
-  texcoords[end_center_tex, ] = c(1, 0.5)
+  texcoords[end_center_tex, ] = c(ribbon_texture_u_max(), 0.5)
 
   side_data = connect_ribbon_rings(
     vertices = vertices[seq_len(side_vertex_count), , drop = FALSE],
@@ -2441,25 +2442,14 @@ cap_ribbon_ends = function(ring_count, ring_size) {
   start_tex = ring_count * (ring_size + 1L)
   end_tex = start_tex + 1L
   last_ring_vertex = (ring_count - 1L) * ring_size
-  last_ring_tex = (ring_count - 1L) * (ring_size + 1L)
 
   counter = 1L
   for (vertex_index in 0:(ring_size - 1L)) {
     next_index = (vertex_index + 1L) %% ring_size
-    start_next_tex = if (vertex_index == ring_size - 1L) {
-      ring_size
-    } else {
-      next_index
-    }
-    end_next_tex = if (vertex_index == ring_size - 1L) {
-      last_ring_tex + ring_size
-    } else {
-      last_ring_tex + next_index
-    }
 
     indices[counter, ] = c(start_center, next_index, vertex_index)
     norm_indices[counter, ] = c(start_normal, start_normal, start_normal)
-    tex_indices[counter, ] = c(start_tex, start_next_tex, vertex_index)
+    tex_indices[counter, ] = c(start_tex, start_tex, start_tex)
     counter = counter + 1L
 
     indices[counter, ] = c(
@@ -2468,11 +2458,7 @@ cap_ribbon_ends = function(ring_count, ring_size) {
       last_ring_vertex + next_index
     )
     norm_indices[counter, ] = c(end_normal, end_normal, end_normal)
-    tex_indices[counter, ] = c(
-      end_tex,
-      last_ring_tex + vertex_index,
-      end_next_tex
-    )
+    tex_indices[counter, ] = c(end_tex, end_tex, end_tex)
     counter = counter + 1L
   }
 
@@ -2481,6 +2467,11 @@ cap_ribbon_ends = function(ring_count, ring_size) {
     norm_indices = norm_indices,
     tex_indices = tex_indices
   ))
+}
+
+#' @keywords internal
+ribbon_texture_u_max = function() {
+  1 - 1e-6
 }
 
 #' @keywords internal
@@ -2521,6 +2512,7 @@ build_single_ribbon_chain_mesh = function(
     u_values = rep(0, ring_count)
   } else {
     u_values = frame$arc_length / total_length
+    u_values = pmin(u_values, ribbon_texture_u_max())
   }
 
   for (ring_index in seq_len(ring_count)) {
@@ -2569,7 +2561,7 @@ build_single_ribbon_chain_mesh = function(
   start_center_tex = ring_count * (ring_size + 1L) + 1L
   end_center_tex = start_center_tex + 1L
   texcoords[start_center_tex, ] = c(0, 0.5)
-  texcoords[end_center_tex, ] = c(1, 0.5)
+  texcoords[end_center_tex, ] = c(ribbon_texture_u_max(), 0.5)
 
   side_data = connect_ribbon_rings(
     vertices = vertices[seq_len(ring_count * ring_size), , drop = FALSE],

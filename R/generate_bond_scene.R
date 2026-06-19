@@ -1,6 +1,6 @@
 #' Build Scene (bonds only)
 #'
-#' Reads an SDF file and extracts the 3D molecule model
+#' Builds a scene containing only bond geometry from a PDB or SDF model.
 #'
 #' @param model Model extracted from a PDB or SDF file.
 #' @param x Default `0`. X offset, applied after centering.
@@ -9,456 +9,182 @@
 #' @param scale Default `1`. Amount to scale the interatom spacing.
 #' @param center Default `TRUE`. Centers the bounding box of the model.
 #' @param force_single_bonds Default `FALSE`. Whether to force all bonds to show as a single connection.
-#' @param pathtrace Default `TRUE`. If `FALSE`, the `rayvertex` package will be used to render the scene.
-#' @param material Default `rayrender::glossy`. Rayrender material to use when `pathtrace = TRUE`. Must be either `glossy`, `diffuse`, or `dielectric`.
+#' @param material Default `rayrender::glossy`. Optional rayrender material
+#'   used to initialize the mesh material when `material_vertex` is not
+#'   supplied. Must be either `glossy`, `diffuse`, or `dielectric`.
+#' @param material_args Default `list()`. Named list of additional arguments
+#'   passed to `material`. Arguments supplied by raymolecule for colors and
+#'   textures override entries with the same names. For example, use
+#'   `list(gloss = 0.35, reflectance = 0.12)` with `rayrender::glossy`, or
+#'   `list(sigma = 0.4)` with `rayrender::diffuse`.
 #' @param material_vertex Default `material_list(diffuse="grey33",ambient="grey33",type="phong", ambient_intensity=0.3)`.
-#' Material to use for the bonds when `pathtrace = FALSE`.
+#' Mesh material to use for the bonds.
 #'
-#' @return Rayrender/rayvertex scene containing only the connections between atoms in a molecule/protein.
-#' @importFrom rayrender render_scene glossy sphere segment add_object
-#' @importFrom rayvertex rasterize_scene material_list sphere_mesh segment_mesh add_shape
+#' @return Raymesh scene containing only the connections between atoms in a molecule/protein.
+#' @importFrom rayrender glossy
+#' @importFrom rayvertex material_list sphere_mesh segment_mesh scene_from_list
 #' @export
 #'
-#' @examples
-#' #Generate a scene with benzene molecule with just the atoms
-#'\donttest{
-#' get_example_molecule("benzene") |>
-#'   read_sdf() |>
+#' @examplesIf interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")
+#' bond_model = read_sdf(get_example_molecule("benzene"))
+#'
+#' # Start with a centered bond scene using the molecule's recorded bond
+#' # orders and default bond material.
+#' bond_model |>
 #'   generate_bond_scene() |>
-#'   render_model(lights = "both", samples=256,sample_method="sobol_blue")
+#'   render_model(
+#'     pathtrace = FALSE,
+#'     width = 800,
+#'     height = 800,
+#'     background = "grey10"
+#'   )
 #'
-#'#Force single bonds to just show the shape of the molecule
-#' get_example_molecule("benzene") |>
-#'   read_sdf() |>
-#'   generate_bond_scene(force_single_bonds = TRUE) |>
-#'   render_model(lights = "both", samples=256,sample_method="sobol_blue")
+#' # This version reduces the spacing, forces every connection to a single
+#' # bond, and lights the ligand from above and below while pathtracing.
+#' bond_model |>
+#'   generate_bond_scene(
+#'     x = 0,
+#'     y = 0,
+#'     z = 0,
+#'     scale = 0.7,
+#'     center = TRUE,
+#'     force_single_bonds = TRUE,
+#'     material = rayrender::glossy,
+#'     material_args = list(gloss = 0.35)
+#'   ) |>
+#'   render_model(
+#'     pathtrace = TRUE,
+#'     lights = "both",
+#'     width = 800,
+#'     height = 800,
+#'     samples = 32
+#'   )
 #'
-#'#Generate a scene with PFOA, reducing the inter-atom spacing
-#' get_example_molecule("pfoa") |>
-#'   read_sdf() |>
-#'   generate_bond_scene(scale=0.3,force_single_bonds = TRUE) |>
-#'   render_model(lights = "both", samples=256,sample_method="sobol_blue")
-#'}
+#' # A custom rayvertex material changes the raster bond color and ambient
+#' # contribution while keeping the same geometry.
+#' bond_material = rayvertex::material_list(
+#'   diffuse = "grey85",
+#'   ambient = "grey25",
+#'   type = "phong",
+#'   ambient_intensity = 0.4
+#' )
+#' cinnemaldehyde_model = read_sdf(get_example_molecule("cinnemaldehyde"))
+#' cinnemaldehyde_model |>
+#'   generate_bond_scene(
+#'     material_vertex = bond_material
+#'   ) |>
+#'   render_model(
+#'     pathtrace = FALSE,
+#'     width = 800,
+#'     height = 800,
+#'     background = "grey10"
+#'   )
 generate_bond_scene = function(
-	model,
-	x = 0,
-	y = 0,
-	z = 0,
-	scale = 1,
-	center = TRUE,
-	force_single_bonds = FALSE,
-	pathtrace = TRUE,
-	material = rayrender::glossy,
-	material_vertex = material_list(
-		diffuse = "grey33",
-		ambient = "grey33",
-		type = "phong",
-		ambient_intensity = 0.3
-	)
+  model,
+  x = 0,
+  y = 0,
+  z = 0,
+  scale = 1,
+  center = TRUE,
+  force_single_bonds = FALSE,
+  material = rayrender::glossy,
+  material_args = list(),
+  material_vertex = material_list(
+    diffuse = "grey33",
+    ambient = "grey33",
+    type = "phong",
+    ambient_intensity = 0.3
+  )
 ) {
-	mat_info = material()
-	mat_info = mat_info[[1]]
-	if (!mat_info$type %in% c(7L, 1L, 3L)) {
-		stop("material() must be either `glossy`, `diffuse`, or `dielectric`")
-	}
-	atoms = model$atoms
-	atoms$x = atoms$x * scale
-	atoms$y = atoms$y * scale
-	atoms$z = atoms$z * scale
-	if (center) {
-		atoms$x = atoms$x - mean(range(atoms$x))
-		atoms$y = atoms$y - mean(range(atoms$y))
-		atoms$z = atoms$z - mean(range(atoms$z))
-	}
-	atoms$x = atoms$x + x
-	atoms$y = atoms$y + y
-	atoms$z = atoms$z + z
+  material_vertex = resolve_mesh_material(
+    material = material,
+    material_vertex = material_vertex,
+    use_material = !missing(material) && missing(material_vertex),
+    material_args = material_args,
+    package_args = list(color = "grey33", image_texture = "")
+  )
+  atoms = model$atoms
+  atoms$x = atoms$x * scale
+  atoms$y = atoms$y * scale
+  atoms$z = atoms$z * scale
+  if (center) {
+    atoms$x = atoms$x - mean(range(atoms$x))
+    atoms$y = atoms$y - mean(range(atoms$y))
+    atoms$z = atoms$z - mean(range(atoms$z))
+  }
+  atoms$x = atoms$x + x
+  atoms$y = atoms$y + y
+  atoms$z = atoms$z + z
 
-	bonds = model$bonds
-	if (pathtrace) {
-		bondlist = list()
-		counter = 1
-		for (i in seq_len(nrow(bonds))) {
-			bond1 = atoms$index == bonds[i, 1]
-			bond2 = atoms$index == bonds[i, 2]
-			if (bonds[i, 3] == 1 || force_single_bonds) {
-				if (any(bond1) && any(bond2)) {
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]),
-						end = as.numeric(atoms[bond2, 1:3]),
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]),
-						end = as.numeric(atoms[bond2, 1:3]),
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
+  get_bond_offsets = function(start, end, bond_order) {
+    zero_offset = c(0, 0, 0)
+    if (bond_order == 1 || force_single_bonds) {
+      return(list(
+        segment_offsets = list(zero_offset, zero_offset),
+        endpoint_offsets = list(zero_offset)
+      ))
+    }
+    dir = end - start
+    onb = onb_from_w(dir)
+    if (bond_order == 2) {
+      offset = onb[3, ] / 8
+      return(list(
+        segment_offsets = list(offset, -offset),
+        endpoint_offsets = list(offset, -offset)
+      ))
+    }
+    if (bond_order == 3) {
+      offset = onb[3, ] / 4
+      return(list(
+        segment_offsets = list(offset, -offset, zero_offset),
+        endpoint_offsets = list(offset, -offset, zero_offset)
+      ))
+    }
+    return(NULL)
+  }
 
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond1, 1]),
-						y = as.numeric(atoms[bond1, 2]),
-						z = as.numeric(atoms[bond1, 3]),
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond2, 1]),
-						y = as.numeric(atoms[bond2, 2]),
-						z = as.numeric(atoms[bond2, 3]),
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-				}
-			} else if (bonds[i, 3] == 2) {
-				if (any(bond1) && any(bond2)) {
-					dir = as.numeric(atoms[bond2, 1:3]) - as.numeric(atoms[bond1, 1:3])
-					onb = onb_from_w(dir)
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]) + onb[3, ] / 8,
-						end = as.numeric(atoms[bond2, 1:3]) + onb[3, ] / 8,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
+  bonds = model$bonds
+  bond_scene = list()
+  counter = 1
+  for (i in seq_len(nrow(bonds))) {
+    bond1 = atoms$index == bonds[i, 1]
+    bond2 = atoms$index == bonds[i, 2]
+    if (!any(bond1) || !any(bond2)) {
+      next
+    }
 
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]) - onb[3, ] / 8,
-						end = as.numeric(atoms[bond2, 1:3]) - onb[3, ] / 8,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond1, 1]) + onb[3, 1] / 8,
-						y = as.numeric(atoms[bond1, 2]) + onb[3, 2] / 8,
-						z = as.numeric(atoms[bond1, 3]) + onb[3, 3] / 8,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond2, 1]) + onb[3, 1] / 8,
-						y = as.numeric(atoms[bond2, 2]) + onb[3, 2] / 8,
-						z = as.numeric(atoms[bond2, 3]) + onb[3, 3] / 8,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond1, 1]) - onb[3, 1] / 8,
-						y = as.numeric(atoms[bond1, 2]) - onb[3, 2] / 8,
-						z = as.numeric(atoms[bond1, 3]) - onb[3, 3] / 8,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond2, 1]) - onb[3, 1] / 8,
-						y = as.numeric(atoms[bond2, 2]) - onb[3, 2] / 8,
-						z = as.numeric(atoms[bond2, 3]) - onb[3, 3] / 8,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-				}
-			} else if (bonds[i, 3] == 3) {
-				if (any(bond1) && any(bond2)) {
-					dir = as.numeric(atoms[bond2, 1:3]) - as.numeric(atoms[bond1, 1:3])
-					onb = onb_from_w(dir)
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]) + onb[3, ] / 4,
-						end = as.numeric(atoms[bond2, 1:3]) + onb[3, ] / 4,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
+    start = as.numeric(atoms[bond1, c("x", "y", "z")])
+    end = as.numeric(atoms[bond2, c("x", "y", "z")])
+    offsets = get_bond_offsets(start, end, bonds[i, 3])
+    if (is.null(offsets)) {
+      next
+    }
 
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]) - onb[3, ] / 4,
-						end = as.numeric(atoms[bond2, 1:3]) - onb[3, ] / 4,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = segment(
-						start = as.numeric(atoms[bond1, 1:3]),
-						end = as.numeric(atoms[bond2, 1:3]),
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond1, 1]) + onb[3, 1] / 4,
-						y = as.numeric(atoms[bond1, 2]) + onb[3, 2] / 4,
-						z = as.numeric(atoms[bond1, 3]) + onb[3, 3] / 4,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond2, 1]) + onb[3, 1] / 4,
-						y = as.numeric(atoms[bond2, 2]) + onb[3, 2] / 4,
-						z = as.numeric(atoms[bond2, 3]) + onb[3, 3] / 4,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond1, 1]) - onb[3, 1] / 4,
-						y = as.numeric(atoms[bond1, 2]) - onb[3, 2] / 4,
-						z = as.numeric(atoms[bond1, 3]) - onb[3, 3] / 4,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond2, 1]) - onb[3, 1] / 4,
-						y = as.numeric(atoms[bond2, 2]) - onb[3, 2] / 4,
-						z = as.numeric(atoms[bond2, 3]) - onb[3, 3] / 4,
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond1, 1]),
-						y = as.numeric(atoms[bond1, 2]),
-						z = as.numeric(atoms[bond1, 3]),
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-					bondlist[[counter]] = sphere(
-						x = as.numeric(atoms[bond2, 1]),
-						y = as.numeric(atoms[bond2, 2]),
-						z = as.numeric(atoms[bond2, 3]),
-						radius = 1 / 10,
-						material = material(color = "grey33")
-					)
-					counter = counter + 1
-				}
-			}
-		}
+    for (offset in offsets$segment_offsets) {
+      bond_scene[[counter]] = segment_mesh(
+        start = start + offset,
+        end = end + offset,
+        radius = 1 / 10,
+        material = material_vertex
+      )
+      counter = counter + 1
+    }
 
-		bond_scene = do.call(rbind, bondlist)
-	} else {
-		bond_scene = list()
-		counter = 1
+    for (offset in offsets$endpoint_offsets) {
+      bond_scene[[counter]] = sphere_mesh(
+        position = start + offset,
+        radius = 1 / 10,
+        material = material_vertex
+      )
+      counter = counter + 1
+      bond_scene[[counter]] = sphere_mesh(
+        position = end + offset,
+        radius = 1 / 10,
+        material = material_vertex
+      )
+      counter = counter + 1
+    }
+  }
 
-		for (i in seq_len(nrow(bonds))) {
-			bond1 = atoms$index == bonds[i, 1]
-			bond2 = atoms$index == bonds[i, 2]
-			if (bonds[i, 3] == 1 || force_single_bonds) {
-				if (any(bond1) && any(bond2)) {
-					bond_scene[[counter]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]),
-							end = as.numeric(atoms[bond2, 1:3]),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]),
-							end = as.numeric(atoms[bond2, 1:3]),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond1, 1]),
-								as.numeric(atoms[bond1, 2]),
-								as.numeric(atoms[bond1, 3])
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond2, 1]),
-								as.numeric(atoms[bond2, 2]),
-								as.numeric(atoms[bond2, 3])
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-				}
-			} else if (bonds[i, 3] == 2) {
-				if (any(bond1) && any(bond2)) {
-					dir = as.numeric(atoms[bond2, 1:3]) - as.numeric(atoms[bond1, 1:3])
-					onb = onb_from_w(dir)
-					bond_scene[[counter]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]) + onb[3, ] / 8,
-							end = as.numeric(atoms[bond2, 1:3]) + onb[3, ] / 8,
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-
-					bond_scene[[counter]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]) - onb[3, ] / 8,
-							end = as.numeric(atoms[bond2, 1:3]) - onb[3, ] / 8,
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond1, 1]) + onb[3, 1] / 8,
-								as.numeric(atoms[bond1, 2]) + onb[3, 2] / 8,
-								as.numeric(atoms[bond1, 3]) + onb[3, 3] / 8
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond2, 1]) + onb[3, 1] / 8,
-								as.numeric(atoms[bond2, 2]) + onb[3, 2] / 8,
-								as.numeric(atoms[bond2, 3]) + onb[3, 3] / 8
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond1, 1]) - onb[3, 1] / 8,
-								as.numeric(atoms[bond1, 2]) - onb[3, 2] / 8,
-								as.numeric(atoms[bond1, 3]) - onb[3, 3] / 8
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond2, 1]) - onb[3, 1] / 8,
-								as.numeric(atoms[bond2, 2]) - onb[3, 2] / 8,
-								as.numeric(atoms[bond2, 3]) - onb[3, 3] / 8
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-				}
-			} else if (bonds[i, 3] == 3) {
-				if (any(bond1) && any(bond2)) {
-					dir = as.numeric(atoms[bond2, 1:3]) - as.numeric(atoms[bond1, 1:3])
-					onb = onb_from_w(dir)
-					bond_scene[[counter]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]) + onb[3, ] / 4,
-							end = as.numeric(atoms[bond2, 1:3]) + onb[3, ] / 4,
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-
-					bond_scene[[counter]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]) - onb[3, ] / 4,
-							end = as.numeric(atoms[bond2, 1:3]) - onb[3, ] / 4,
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						segment_mesh(
-							start = as.numeric(atoms[bond1, 1:3]),
-							end = as.numeric(atoms[bond2, 1:3]),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond1, 1]) + onb[3, 1] / 4,
-								as.numeric(atoms[bond1, 2]) + onb[3, 2] / 4,
-								as.numeric(atoms[bond1, 3]) + onb[3, 3] / 4
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond2, 1]) + onb[3, 1] / 4,
-								as.numeric(atoms[bond2, 2]) + onb[3, 2] / 4,
-								as.numeric(atoms[bond2, 3]) + onb[3, 3] / 4
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond1, 1]) - onb[3, 1] / 4,
-								as.numeric(atoms[bond1, 2]) - onb[3, 2] / 4,
-								as.numeric(atoms[bond1, 3]) - onb[3, 3] / 4
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond2, 1]) - onb[3, 1] / 4,
-								as.numeric(atoms[bond2, 2]) - onb[3, 2] / 4,
-								as.numeric(atoms[bond2, 3]) - onb[3, 3] / 4
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond1, 1]),
-								as.numeric(atoms[bond1, 2]),
-								as.numeric(atoms[bond1, 3])
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-					bond_scene[[counter]] =
-						sphere_mesh(
-							position = c(
-								as.numeric(atoms[bond2, 1]),
-								as.numeric(atoms[bond2, 2]),
-								as.numeric(atoms[bond2, 3])
-							),
-							radius = 1 / 10,
-							material = material_vertex
-						)
-					counter = counter + 1
-				}
-			}
-		}
-		return(rayvertex::scene_from_list(bond_scene))
-	}
+  return(rayvertex::scene_from_list(bond_scene))
 }

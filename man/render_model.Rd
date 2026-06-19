@@ -15,11 +15,14 @@ render_model(
   order_rotation = c(1, 2, 3),
   lights = "top",
   lightintensity = 80,
+  pathtrace = TRUE,
+  plot = TRUE,
+  scene_elements = NULL,
   ...
 )
 }
 \arguments{
-\item{scene}{`rayrender` scene of molecule model.}
+\item{scene}{Raymesh scene of molecule model.}
 
 \item{width}{Default `800`. Image width in pixels.}
 
@@ -34,7 +37,8 @@ Camera target point.}
 bounds. Camera position.}
 
 \item{angle}{Default `c(0,0,0)`. Degrees to rotate the model around the X, Y, and Z axes. If this
-is a single number, it will be taken as the Y axis rotation.}
+is a single number, it is interpreted as `c(0, angle, 0)` and only rotates
+around the Y axis.}
 
 \item{order_rotation}{Default `c(1,2,3)`. What order to apply the rotations specified in `angle`.}
 
@@ -44,7 +48,26 @@ light information generated with `rayvertex`.}
 
 \item{lightintensity}{Default `80`. Light intensity for pathtraced scenes.}
 
-\item{...}{Other arguments to pass to `rayrender::render_scene()` or `rayvertex::rasterize_scene()`}
+\item{pathtrace}{Default `TRUE`. If `TRUE`, convert the raymesh scene to a
+`rayrender` raymesh and pathtrace it. Scene-generator rayrender materials
+are passed to `rayrender::raymesh_model()` with `override_material = TRUE`
+when available. If `FALSE`, rasterize the raymesh scene with `rayvertex`.}
+
+\item{plot}{Default `TRUE`. If `TRUE`, plot the rendered image to the
+current graphics device. If `FALSE`, only return the rendered rayimage
+array.}
+
+\item{scene_elements}{Default `NULL`. Additional backend scene elements to
+add after automatic camera calculation and model rotation. For
+`pathtrace = TRUE`, elements may be rayrender scenes or rayvertex raymesh
+scenes. For `pathtrace = FALSE`, elements must be rayvertex raymesh scenes.}
+
+\item{...}{Other arguments to pass to `rayrender::render_scene()` or
+`rayvertex::rasterize_scene()`. Arguments that only apply to the other
+backend are ignored. For pathtraced scenes, `background` sets both
+`backgroundlow` and `backgroundhigh` in `rayrender::render_scene()` and
+turns on `ambient_light`. For raster scenes, `background` is passed through
+to `rayvertex::rasterize_scene()`.}
 }
 \value{
 Rendered image
@@ -52,56 +75,113 @@ Rendered image
 \description{
 Automatically plots the molecule with a camera position and field of view that includes the full model.
 For more control over the scene, pass the scene to `rayrender::render_scene()` or `rayvertex::rasterize_scene()` and specify
-the camera position manually. Note: spheres and cylinders in the scene are used to automatically
-compute the field of view of the scene--if rendering with rayrender, adding additional sphere (e.g. with `rayrender::generate_ground()`)
-will change this calculation. Use `rayrender::render_scene()` instead if this is a problem.
+the camera position manually.
 }
 \examples{
-# Generate a scene with caffeine molecule with just the atoms
-\donttest{
-get_example_molecule("caffeine") |>
-  read_sdf() |>
-  generate_full_scene() |>
-  render_model(samples=256,sample_method="sobol_blue")
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
+compact_model = read_pdb(download_pdb("6k16", out_dir = tempdir()))
+compact_scene = compact_model |>
+  generate_ribbon_scene(
+    material = rayrender::diffuse,
+    show_hetero_atoms = FALSE
+  )
 
-#Light the example from below as well
-get_example_molecule("caffeine") |>
-  read_sdf() |>
-  generate_full_scene() |>
-  render_model(lights = "both", samples=256,sample_method="sobol_blue")
+# Start with render_model's default camera, top lighting, and calculated FOV.
+compact_scene |>
+  render_model(pathtrace = TRUE, width = 800, height = 800, samples = 32)
 
-#Generate a scene with penicillin, increasing the number of samples and the width/height
-#for a higher quality render.
-get_example_molecule("penicillin") |>
-  read_sdf() |>
-  generate_full_scene() |>
-  render_model(lights = "both", samples=256, width=800, height=800,sample_method="sobol_blue")
+# Use `plot = FALSE` when you want the image array without drawing it.
+compact_image = compact_scene |>
+  render_model(
+    pathtrace = TRUE,
+    width = 800,
+    height = 800,
+    samples = 32,
+    plot = FALSE
+  )
 
-#Render the scene with rayvertex and custom lights
-get_example_molecule("penicillin") |>
-  read_sdf() |>
-  generate_full_scene(pathtrace=FALSE) |>
-  render_model(width=800, height=800,background="grey66",
-               lights = rayvertex::directional_light(c(0.2,1,1)))
+# This render uses an explicit camera, scalar Y rotation, a solid
+# background, weaker top light, and rayrender sampling options. The
+# camera orientation was extracted interactively in rayrender by 
+# pressing the "P" key.
+compact_scene |>
+  render_model(
+    pathtrace = TRUE,
+    width = 800,
+    height = 800,
+    fov = 72,
+    lookat = c(-1.93, 11.99, 8.47),
+    lookfrom = c(-25.50, 26.52, 14.99),
+    aperture = 2,
+    angle = 35,
+    background = "grey2",
+    lights = "top",
+    lightintensity = 50,
+    samples = 32,
+    sample_method = "sobol_blue",
+    clamp_value = 10
+  )
 
-#Rotate the molecule 30 degrees around the y axis, and the 30 degrees around the z axis
-get_example_molecule("penicillin") |>
-  read_sdf() |>
-  generate_full_scene() |>
-  render_model(lights = "both", samples=256, width=800, height=800,
-               angle=c(0,30,30),sample_method="sobol_blue")
+# Vector rotation and a custom rotation order show the same scene from a
+# different orientation with lights above and below.
+compact_scene |>
+  render_model(
+    pathtrace = TRUE,
+    angle = c(20, 90, 90),
+    lights = "both",
+    fov = 28,
+    samples = 32,
+    sample_method = "sobol_blue"
+  )
 
+# Disable render_model's automatic lights and add your own.
+tmp_exr = tempfile(fileext=".exr")
+skymodelr::generate_sky(filename=tmp_exr, hosek = FALSE)
+scene_elements = rayrender::generate_studio(
+  depth    = -30,
+  distance = -35,
+  material = rayrender::diffuse(color="grey50")
+)
+compact_scene |>
+  render_model(
+    pathtrace = TRUE,
+    lights = "none",
+    background = "grey12",
+    samples = 32,
+    fov = 25,
+    sample_method = "sobol_blue",
+    rotate_env = 180,
+    scene_elements = scene_elements,
+    environment_light = tmp_exr,
+    iso=10
+  )
 
+# Extra rayrender scene elements can be added after the automatic camera and
+# model rotation are set, which is useful for fixed reference marks.
+compact_scene |>
+  render_model(
+    pathtrace = TRUE,
+    angle = 35,
+    scene_elements = rayrender::sphere(
+      x = -10,
+      y = -10,
+      z = -10,
+      radius = 0.5,
+      material = rayrender::light(intensity = 15)
+    ),
+    samples = 32,
+    sample_method = "sobol_blue"
+  )
 
-#Add a checkered plane underneath, using rayrender::add_object and rayrender::xz_rect().
-#We also pass a value to `clamp_value` to minimize fireflies (bright spots).
-library(rayrender)
-get_example_molecule("skatole") |>
-  read_sdf() |>
-  generate_full_scene() |>
-  add_object(xz_rect(xwidth=1000,zwidth=1000,y=-4,
-                     material=diffuse(color="#330000",checkercolor="#770000"))) |>
-  render_model(samples=256, width=800, height=800, clamp_value=10,
-               sample_method="sobol_blue")
-}
+# Raster scenes use rayvertex lighting. This example passes a directional
+# light matrix through render_model to rasterize_scene().
+raster_scene = compact_model |>
+  generate_ribbon_scene()
+raster_scene |>
+  render_model(
+    pathtrace = FALSE,
+    background = "grey12",
+    lights = rayvertex::directional_light(c(0.2, 1, -1))
+  )
+\dontshow{\}) # examplesIf}
 }

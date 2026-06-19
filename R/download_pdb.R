@@ -16,12 +16,40 @@
 #' @return Path to the downloaded PDB file.
 #' @export
 #'
-#'@examplesIf interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")
-#'   pdb_file = download_pdb("hemoglobin", out_dir = tempdir())
-#'   read_pdb(pdb_file) |>
-#'     generate_ribbon_scene(pathtrace = FALSE) |>
-#'     render_model()
-#' 
+#' @examplesIf interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")
+#' # Start with a direct PDB ID download. A temporary directory, custom
+#' # filename, overwrite flag, and verbose output make the file handling clear.
+#' pdb_file = download_pdb(
+#'   "4fsp",
+#'   out_dir = tempdir(),
+#'   filename = "outer-membrane-barrel.pdb",
+#'   overwrite = TRUE,
+#'   verbose = TRUE
+#' )
+#'
+#' read_pdb(pdb_file, verbose = TRUE) |>
+#'   generate_ribbon_scene() |>
+#'   render_model(
+#'     pathtrace = FALSE,
+#'     width = 800,
+#'     height = 800,
+#'     background = "grey12"
+#'   )
+#'
+#' # Protein-name lookup searches RCSB and tries up to three legacy PDB matches.
+#' hemoglobin_file = download_pdb(
+#'   "hemoglobin",
+#'   out_dir = tempdir(),
+#'   max_results = 3L
+#' )
+#' read_pdb(hemoglobin_file, verbose = TRUE) |>
+#'   generate_ribbon_scene() |>
+#'   render_model(
+#'     pathtrace = FALSE,
+#'     width = 800,
+#'     height = 800,
+#'     background = "grey12"
+#'   )
 download_pdb = function(
   protein,
   out_dir = ".",

@@ -11,9 +11,15 @@
 ^README\.Rmd$
 ^\.RDataTmp$
 ^README\.md$
+^README[.]html$
 ^README_cache$
+^README_cache/
 ^README_files$
+^README_files/
 ^man/figures$
+^man/figures/
+^pdb_[^/]*/$
+^pdb_[^/]*$
 ^pdb_sample$
 ^pdb_sample/
 ^pdb_multiview$
