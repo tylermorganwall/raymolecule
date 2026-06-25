@@ -122,7 +122,7 @@
 #'     use_vertex_normals = TRUE,
 #'     verbose = TRUE
 #'   ) |>
-#'   render_model(pathtrace = TRUE, width = 800, height = 800, samples = 32)
+#'   render_model(pathtrace = TRUE, width = 800, height = 800, samples = 128)
 #'
 #' # Start the beta-barrel example with the default UV texture in raster mode.
 #' # We rotate the model to match the render in the protein data bank.
@@ -208,7 +208,7 @@
 #'		 lookfrom = c(-45.95, 58.56, 79.95),
 #'		 lookat = c(-7.19, 3.87, -1.52) ,
 #'     width = 800,
-#'     height = 800,
+#'     height = 800, samples=128,
 #'     background = "black"
 #'   )
 #'
@@ -221,7 +221,7 @@
 #'		 lookfrom = c(-45.95, 58.56, 79.95),
 #'		 lookat = c(-7.19, 3.87, -1.52) ,
 #'		 width = 800,
-#'		 height = 800,
+#'		 height = 800, samples=128,
 #'		 background = "black"
 #'	 )
 generate_ribbon_scene = function(

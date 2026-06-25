@@ -136,12 +136,12 @@ compact_scene |>
 
 # Disable render_model's automatic lights and add your own.
 tmp_exr = tempfile(fileext=".exr")
-skymodelr::generate_sky(filename=tmp_exr, hosek = FALSE)
-scene_elements = rayrender::generate_studio(
-  depth    = -30,
-  distance = -35,
-  material = rayrender::diffuse(color="grey50")
-)
+background_light = matrix(0,nrow=500,ncol=1000)
+background_light[140:160, 250:270] = 700 #key
+background_light[100:170, 200:300+500] = 10 #fill
+rayimage::ray_write_image(background_light, tmp_exr)
+#Generate a key and fill light
+rayimage::plot_image(background_light)
 compact_scene |>
   render_model(
     pathtrace = TRUE,
@@ -151,9 +151,7 @@ compact_scene |>
     fov = 25,
     sample_method = "sobol_blue",
     rotate_env = 180,
-    scene_elements = scene_elements,
-    environment_light = tmp_exr,
-    iso=10
+    environment_light = tmp_exr
   )
 
 # Extra rayrender scene elements can be added after the automatic camera and
