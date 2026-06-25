@@ -229,13 +229,13 @@ to `rayvertex::rasterize_scene()`.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Disable render_model's automatic lights and add your own.</span></span></span>
 <span class="r-in"><span><span class="va">tmp_exr</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext<span class="op">=</span><span class="st">".exr"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">skymodelr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/skymodelr/man/generate_sky.html" class="external-link">generate_sky</a></span><span class="op">(</span>filename<span class="op">=</span><span class="va">tmp_exr</span>, hosek <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> The Prague sky model coefficient file 'SkyModelDatasetGround.dat' is not installed. Run download_sky_data(sea_level = TRUE, wide_spectrum = FALSE) explicitly to download it.</span>
-<span class="r-in"><span><span class="va">scene_elements</span> <span class="op">=</span> <span class="fu">rayrender</span><span class="fu">::</span><span class="fu"><a href="http://www.rayrender.net/reference/generate_studio.html" class="external-link">generate_studio</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  depth    <span class="op">=</span> <span class="op">-</span><span class="fl">30</span>,</span></span>
-<span class="r-in"><span>  distance <span class="op">=</span> <span class="op">-</span><span class="fl">35</span>,</span></span>
-<span class="r-in"><span>  material <span class="op">=</span> <span class="fu">rayrender</span><span class="fu">::</span><span class="fu"><a href="http://www.rayrender.net/reference/diffuse.html" class="external-link">diffuse</a></span><span class="op">(</span>color<span class="op">=</span><span class="st">"grey50"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">background_light</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>,nrow<span class="op">=</span><span class="fl">500</span>,ncol<span class="op">=</span><span class="fl">1000</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">background_light</span><span class="op">[</span><span class="fl">140</span><span class="op">:</span><span class="fl">160</span>, <span class="fl">250</span><span class="op">:</span><span class="fl">270</span><span class="op">]</span> <span class="op">=</span> <span class="fl">700</span> <span class="co">#key</span></span></span>
+<span class="r-in"><span><span class="va">background_light</span><span class="op">[</span><span class="fl">100</span><span class="op">:</span><span class="fl">170</span>, <span class="fl">200</span><span class="op">:</span><span class="fl">300</span><span class="op">+</span><span class="fl">500</span><span class="op">]</span> <span class="op">=</span> <span class="fl">10</span> <span class="co">#fill</span></span></span>
+<span class="r-in"><span><span class="fu">rayimage</span><span class="fu">::</span><span class="fu"><a href="https://www.rayimage.dev/reference/ray_write_image.html" class="external-link">ray_write_image</a></span><span class="op">(</span><span class="va">background_light</span>, <span class="va">tmp_exr</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co">#Generate a key and fill light</span></span></span>
+<span class="r-in"><span><span class="fu">rayimage</span><span class="fu">::</span><span class="fu"><a href="https://www.rayimage.dev/reference/plot_image.html" class="external-link">plot_image</a></span><span class="op">(</span><span class="va">background_light</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="render_model-4.png" alt="" width="1600" height="1600"></span>
 <span class="r-in"><span><span class="va">compact_scene</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">render_model</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    pathtrace <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
@@ -245,12 +245,9 @@ to `rayvertex::rasterize_scene()`.</p></dd>
 <span class="r-in"><span>    fov <span class="op">=</span> <span class="fl">25</span>,</span></span>
 <span class="r-in"><span>    sample_method <span class="op">=</span> <span class="st">"sobol_blue"</span>,</span></span>
 <span class="r-in"><span>    rotate_env <span class="op">=</span> <span class="fl">180</span>,</span></span>
-<span class="r-in"><span>    scene_elements <span class="op">=</span> <span class="va">scene_elements</span>,</span></span>
-<span class="r-in"><span>    environment_light <span class="op">=</span> <span class="va">tmp_exr</span>,</span></span>
-<span class="r-in"><span>    iso<span class="op">=</span><span class="fl">10</span></span></span>
+<span class="r-in"><span>    environment_light <span class="op">=</span> <span class="va">tmp_exr</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>file '/tmp/Rtmp0RXH6o/file1e75384c92e1.exr' cannot be found, not using background image.</span>
-<span class="r-plt img"><img src="render_model-4.png" alt="" width="1600" height="1600"></span>
+<span class="r-plt img"><img src="render_model-5.png" alt="" width="1600" height="1600"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Extra rayrender scene elements can be added after the automatic camera and</span></span></span>
 <span class="r-in"><span><span class="co"># model rotation are set, which is useful for fixed reference marks.</span></span></span>
@@ -268,7 +265,7 @@ to `rayvertex::rasterize_scene()`.</p></dd>
 <span class="r-in"><span>    samples <span class="op">=</span> <span class="fl">32</span>,</span></span>
 <span class="r-in"><span>    sample_method <span class="op">=</span> <span class="st">"sobol_blue"</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
-<span class="r-plt img"><img src="render_model-5.png" alt="" width="1600" height="1600"></span>
+<span class="r-plt img"><img src="render_model-6.png" alt="" width="1600" height="1600"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Raster scenes use rayvertex lighting. This example passes a directional</span></span></span>
 <span class="r-in"><span><span class="co"># light matrix through render_model to rasterize_scene().</span></span></span>
@@ -280,7 +277,7 @@ to `rayvertex::rasterize_scene()`.</p></dd>
 <span class="r-in"><span>    background <span class="op">=</span> <span class="st">"grey12"</span>,</span></span>
 <span class="r-in"><span>    lights <span class="op">=</span> <span class="fu">rayvertex</span><span class="fu">::</span><span class="fu"><a href="https://www.rayvertex.com/reference/directional_light.html" class="external-link">directional_light</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">1</span>, <span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
-<span class="r-plt img"><img src="render_model-6.png" alt="" width="1600" height="1600"></span>
+<span class="r-plt img"><img src="render_model-7.png" alt="" width="1600" height="1600"></span>
 </code></pre></div>
     </div>
   </div>
