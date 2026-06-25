@@ -178,7 +178,7 @@ to `rayvertex::rasterize_scene()`.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Start with render_model's default camera, top lighting, and calculated FOV.</span></span></span>
 <span class="r-in"><span><span class="va">compact_scene</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>  <span class="fu">render_model</span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">TRUE</span>, width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu">render_model</span><span class="op">(</span>pathtrace <span class="op">=</span> <span class="cn">TRUE</span>, width <span class="op">=</span> <span class="fl">800</span>, height <span class="op">=</span> <span class="fl">800</span>, samples <span class="op">=</span> <span class="fl">128</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="render_model-1.png" alt="" width="1600" height="1600"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Use `plot = FALSE` when you want the image array without drawing it.</span></span></span>
@@ -187,7 +187,7 @@ to `rayvertex::rasterize_scene()`.</p></dd>
 <span class="r-in"><span>    pathtrace <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>    width <span class="op">=</span> <span class="fl">800</span>,</span></span>
 <span class="r-in"><span>    height <span class="op">=</span> <span class="fl">800</span>,</span></span>
-<span class="r-in"><span>    samples <span class="op">=</span> <span class="fl">32</span>,</span></span>
+<span class="r-in"><span>    samples <span class="op">=</span> <span class="fl">128</span>,</span></span>
 <span class="r-in"><span>    plot <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
@@ -208,7 +208,7 @@ to `rayvertex::rasterize_scene()`.</p></dd>
 <span class="r-in"><span>    background <span class="op">=</span> <span class="st">"grey2"</span>,</span></span>
 <span class="r-in"><span>    lights <span class="op">=</span> <span class="st">"top"</span>,</span></span>
 <span class="r-in"><span>    lightintensity <span class="op">=</span> <span class="fl">50</span>,</span></span>
-<span class="r-in"><span>    samples <span class="op">=</span> <span class="fl">32</span>,</span></span>
+<span class="r-in"><span>    samples <span class="op">=</span> <span class="fl">128</span>,</span></span>
 <span class="r-in"><span>    sample_method <span class="op">=</span> <span class="st">"sobol_blue"</span>,</span></span>
 <span class="r-in"><span>    clamp_value <span class="op">=</span> <span class="fl">10</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
@@ -222,7 +222,7 @@ to `rayvertex::rasterize_scene()`.</p></dd>
 <span class="r-in"><span>    angle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">90</span>, <span class="fl">90</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    lights <span class="op">=</span> <span class="st">"both"</span>,</span></span>
 <span class="r-in"><span>    fov <span class="op">=</span> <span class="fl">28</span>,</span></span>
-<span class="r-in"><span>    samples <span class="op">=</span> <span class="fl">32</span>,</span></span>
+<span class="r-in"><span>    samples <span class="op">=</span> <span class="fl">128</span>,</span></span>
 <span class="r-in"><span>    sample_method <span class="op">=</span> <span class="st">"sobol_blue"</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-plt img"><img src="render_model-3.png" alt="" width="1600" height="1600"></span>
@@ -241,7 +241,7 @@ to `rayvertex::rasterize_scene()`.</p></dd>
 <span class="r-in"><span>    pathtrace <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>    lights <span class="op">=</span> <span class="st">"none"</span>,</span></span>
 <span class="r-in"><span>    background <span class="op">=</span> <span class="st">"grey12"</span>,</span></span>
-<span class="r-in"><span>    samples <span class="op">=</span> <span class="fl">32</span>,</span></span>
+<span class="r-in"><span>    samples <span class="op">=</span> <span class="fl">128</span>,</span></span>
 <span class="r-in"><span>    fov <span class="op">=</span> <span class="fl">25</span>,</span></span>
 <span class="r-in"><span>    sample_method <span class="op">=</span> <span class="st">"sobol_blue"</span>,</span></span>
 <span class="r-in"><span>    rotate_env <span class="op">=</span> <span class="fl">180</span>,</span></span>
@@ -262,7 +262,7 @@ to `rayvertex::rasterize_scene()`.</p></dd>
 <span class="r-in"><span>      radius <span class="op">=</span> <span class="fl">0.5</span>,</span></span>
 <span class="r-in"><span>      material <span class="op">=</span> <span class="fu">rayrender</span><span class="fu">::</span><span class="fu"><a href="http://www.rayrender.net/reference/light.html" class="external-link">light</a></span><span class="op">(</span>intensity <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span></span>
 <span class="r-in"><span>    <span class="op">)</span>,</span></span>
-<span class="r-in"><span>    samples <span class="op">=</span> <span class="fl">32</span>,</span></span>
+<span class="r-in"><span>    samples <span class="op">=</span> <span class="fl">128</span>,</span></span>
 <span class="r-in"><span>    sample_method <span class="op">=</span> <span class="st">"sobol_blue"</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-plt img"><img src="render_model-6.png" alt="" width="1600" height="1600"></span>
