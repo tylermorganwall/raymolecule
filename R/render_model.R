@@ -53,7 +53,7 @@
 #'
 #' # Start with render_model's default camera, top lighting, and calculated FOV.
 #' compact_scene |>
-#'   render_model(pathtrace = TRUE, width = 800, height = 800, samples = 32)
+#'   render_model(pathtrace = TRUE, width = 800, height = 800, samples = 128)
 #'
 #' # Use `plot = FALSE` when you want the image array without drawing it.
 #' compact_image = compact_scene |>
@@ -61,7 +61,7 @@
 #'     pathtrace = TRUE,
 #'     width = 800,
 #'     height = 800,
-#'     samples = 32,
+#'     samples = 128,
 #'     plot = FALSE
 #'   )
 #'
@@ -82,7 +82,7 @@
 #'     background = "grey2",
 #'     lights = "top",
 #'     lightintensity = 50,
-#'     samples = 32,
+#'     samples = 128,
 #'     sample_method = "sobol_blue",
 #'     clamp_value = 10
 #'   )
@@ -95,7 +95,7 @@
 #'     angle = c(20, 90, 90),
 #'     lights = "both",
 #'     fov = 28,
-#'     samples = 32,
+#'     samples = 128,
 #'     sample_method = "sobol_blue"
 #'   )
 #'
@@ -112,7 +112,7 @@
 #'     pathtrace = TRUE,
 #'     lights = "none",
 #'     background = "grey12",
-#'     samples = 32,
+#'     samples = 128,
 #'     fov = 25,
 #'     sample_method = "sobol_blue",
 #'     rotate_env = 180,
@@ -132,7 +132,7 @@
 #'       radius = 0.5,
 #'       material = rayrender::light(intensity = 15)
 #'     ),
-#'     samples = 32,
+#'     samples = 128,
 #'     sample_method = "sobol_blue"
 #'   )
 #'
